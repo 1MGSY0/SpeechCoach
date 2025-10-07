@@ -1,2 +1,3 @@
 # SpeechCoach
-Conversation grading Role-Playing AI application 
+Conversation Coaching Speech AI agent
+
