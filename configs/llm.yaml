@@ -1,0 +1,8 @@
+impl: llama_cpp
+model_path: models/TinyLlama-1.1B.q4_0.gguf
+n_ctx: 2048
+gpu_layers: 35
+temperature: 0.7
+template: |
+  Understood. I heard: "{asr_text}"
+  Could you clarify your case ID so I can assist further?
