@@ -1,3 +1,13 @@
 # SpeechCoach
 Conversation Coaching Speech AI agent
 
+
+## Citation
+
+@misc{yamagishi2019vctk,
+  author={Yamagishi, Junichi and Veaux, Christophe and MacDonald, Kirsten},
+  title={ {CSTR VCTK Corpus}: English Multi-speaker Corpus for {CSTR} Voice Cloning Toolkit (version 0.92)},
+  publisher={University of Edinburgh. The Centre for Speech Technology Research (CSTR)},
+  year=2019,
+  doi={10.7488/ds/2645},
+}
