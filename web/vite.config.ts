@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 
-// Dev proxy for convenience; you can also set VITE_BACKEND_URL in .env and session.ts will use it directly.
 export default defineConfig({
   server: {
     host: 'localhost',

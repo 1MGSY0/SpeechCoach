@@ -142,10 +142,7 @@ def main():
         # For simplicity modify earlier: we will store audio in first pass instead.
         pass  # Placeholder; audio stored earlier if we add key
 
-    # Actually synth again with audio storage; rewriting manifest with audio
-    # More efficient to modify synth_sentences to return audio arrays; patch quickly below.
 
-    # Since we didn't store audio, regenerate (costly but acceptable for small smoke set)
     if TTS is None:
         print("[error] TTS unavailable for second pass.", file=sys.stderr)
         sys.exit(4)

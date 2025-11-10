@@ -4,11 +4,7 @@ import soundfile as sf
 from faster_whisper import WhisperModel
 from .base import ASRResult
 
-# Faster-Whisper's VAD feature requires the onnxruntime package.
-# Some environments (Windows missing MSVC runtimes, mismatched wheels, etc.)
-# can raise a DLL import error when importing onnxruntime. Detect that
-# at import time and fall back to disabling the VAD filter so the rest
-# of the ASR pipeline can run normally.
+# Check if onnxruntime is available for VAD filtering
 try:
     import onnxruntime  # type: ignore
     _VAD_AVAILABLE = True
@@ -23,12 +19,11 @@ except Exception as e:
 
 class FasterWhisperASR:
     def __init__(self, model_size="small", compute_type="float16"):
-        # If no GPU, use "int8" or "int8_float16" for CPU speed
         self.model = WhisperModel(model_size, compute_type=compute_type)
 
     def transcribe_file(self, wav_path: str) -> ASRResult:
         wav_path = str(Path(wav_path))
-        # Faster-Whisper handles resampling internally; we’ll just pass the path
+        # Faster-Whisper handles resampling internally
         segments, info = self.model.transcribe(
             wav_path,
             # Only enable VAD when onnxruntime was successfully imported.

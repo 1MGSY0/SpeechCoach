@@ -1,4 +1,3 @@
-# src/apps/run_benchmark.py
 import argparse, glob, os, yaml
 import soundfile as sf
 from pathlib import Path

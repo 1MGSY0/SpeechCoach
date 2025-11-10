@@ -1,4 +1,3 @@
-# src/apps/run_batch.py
 import argparse, yaml, glob, os
 from pathlib import Path
 from rich import print

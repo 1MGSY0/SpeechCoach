@@ -6,11 +6,11 @@ export interface SocketCallbacks {
   onMetrics: (m: any) => void;
   onDebug: (d: string) => void;
   onError: (e: string) => void;
-  onUserLevel?: (level: number) => void; // optional: mic RMS level 0..1
-  onUserSpeaking?: (speaking: boolean) => void; // optional: simple VAD flag
+  onUserLevel?: (level: number) => void; 
+  onUserSpeaking?: (speaking: boolean) => void; 
 }
 
-// Dev: use Vite proxy with relative paths to avoid CORS/host issues.
+// use Vite proxy with relative paths to avoid CORS/host issues.
 // REST calls use '/api/*' and WebSockets use ws(s)://location.host
 
 export async function initSession(options?: { llm?: 'stub'|'llama' }){

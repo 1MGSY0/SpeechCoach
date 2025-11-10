@@ -1,4 +1,3 @@
-# src/apps/prepare_benchmark_data.py
 """
 Download small speech subsets and normalize to 16 kHz mono WAV so benchmarks can run.
 
