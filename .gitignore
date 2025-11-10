@@ -3,3 +3,11 @@
 .env.local
 .env.*.local
 .venv
+
+data/
+__pycache__/
+setup_test.md
+TODO.md
+
+models/
+logs/

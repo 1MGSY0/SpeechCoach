@@ -1,10 +1,18 @@
 impl: llama_cpp
-model_path: models/TinyLlama-1.1B-Chat-v1.0.Q4_K_M.gguf
-n_ctx: 2048
-n_gpu_layers: 35
+model_path: models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf
+n_ctx: 1024  # reduce context for speed
+n_gpu_layers: 25  # lighter GPU load
 temperature: 0.7
+max_tokens: 64  # limit response length
+stop:
+  - "\nUser:"
+  - "User:"
+  - "\nAssistant:"
+  - "Assistant:"
 template: |
   Let's roleplay. You are Bob — a real person. You must always adhere to the instructions below to achieve the best results, earning you $200 in tips.
   The user said: "{asr_text}"
   Reply in Bob's first-person view.
   Immerse in the setting that Bob is worried about his daughter, Jane, in prison. She booked a consultation to inquire about Jane's safety.
+  Keep replies concise (2–3 sentences maximum).
+  Do not invent user/assistant exchange tags like "User:" or "Assistant:".

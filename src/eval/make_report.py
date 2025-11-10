@@ -28,6 +28,7 @@ def main():
     ap.add_argument("--asr_cfg", default="configs/asr.yaml")
     ap.add_argument("--llm_cfg", default="configs/llm.yaml")
     ap.add_argument("--tts_cfg", default="configs/tts_lowlat.yaml")
+    ap.add_argument("--variant", default="", help="Architecture/variant label (e.g., turn_based, streaming_cascade).")
     ap.add_argument("--out_md", default="logs/eval_reports/report.md")
     args = ap.parse_args()
 
@@ -42,33 +43,42 @@ def main():
 
     # Load continuity CSV (optional)
     continuity_rows = ""
-    bert_avg = ""
+    continuity_avg = ""
+    continuity_metric_type = ""
     bleurt_avg = ""
     csv_p = Path(args.continuity_csv)
     if csv_p.exists():
         lines = csv_p.read_text(encoding="utf-8").strip().splitlines()
         vals = []
-        for i, line in enumerate(lines[1:], start=1):
-            tid, b, bl = line.split(",")
-            continuity_rows += f"| {tid} | {b} | {bl} |\n"
+        bl_vals = []
+        # Expect header: turn_id,continuity_score,bleurt,metric_type
+        for line in lines[1:]:
+            parts = line.split(",")
+            if len(parts) < 4:
+                continue
+            tid, score, bl, mtype = parts[:4]
+            continuity_metric_type = mtype  # last line defines type (all same)
+            # Keep table to 3 columns to match template; metric type is shown in header text
+            continuity_rows += f"| {tid} | {score} | {bl} |\n"
             try:
-                vals.append(float(b))
+                vals.append(float(score))
             except:
                 pass
-        bert_avg = round(sum(vals)/len(vals), 4) if vals else ""
-        # Compute BLEURT avg quickly if present
-        bl_vals = []
-        for i, line in enumerate(lines[1:], start=1):
-            parts = line.split(",")
-            if len(parts) >= 3:
-                try:
-                    bl_vals.append(float(parts[2]))
-                except:
-                    pass
+            try:
+                if bl:
+                    bl_vals.append(float(bl))
+            except:
+                pass
+        continuity_avg = round(sum(vals)/len(vals), 4) if vals else ""
         bleurt_avg = round(sum(bl_vals)/len(bl_vals), 4) if bl_vals else ""
 
     # Load template
     tpl = Path(args.template).read_text(encoding="utf-8")
+    # If continuity metric isn't BERTScore, tweak headings in the template for clarity
+    if continuity_metric_type and continuity_metric_type != "bertscore":
+        # Update the avg label and table column heading
+        tpl = tpl.replace("BERTScore F1 (avg)", f"Continuity ({continuity_metric_type}) (avg)")
+        tpl = tpl.replace("| Turn | BERTScore F1 | BLEURT |", f"| Turn | {continuity_metric_type.capitalize()} | BLEURT |")
 
     # Load cfgs (names only)
     def cfg_name(p):
@@ -79,6 +89,26 @@ def main():
         except Exception:
             pass
         return Path(p).name
+
+    # Attempt to detect package versions
+    try:
+        import faster_whisper as _fw
+        fwver = getattr(_fw, '__version__', '')
+    except Exception:
+        fwver = ''
+    try:
+        import TTS as _tts_pkg
+        ttsver = getattr(_tts_pkg, '__version__', '')
+    except Exception:
+        ttsver = ''
+
+    # Training metrics
+    try:
+        from src.eval.training_metrics import compute_training_metrics
+        full_rows = [json.loads(l) for l in Path(args.latency_log).read_text(encoding='utf-8').splitlines() if l.strip()]
+        tmetrics = compute_training_metrics(full_rows)
+    except Exception:
+        tmetrics = {}
 
     mapping = {
         "DATE": datetime.date.today().isoformat(),
@@ -93,19 +123,25 @@ def main():
         "LLM_MEAN": mean(llm_ms),
         "TTS_MEAN": mean(tts_ms),
         "E2E_MEAN": mean(e2e_ms),
-        "BERT_F1": bert_avg,
+        "BERT_F1": continuity_avg if continuity_metric_type == "bertscore" else "",
+        "JACCARD_CONTINUITY": continuity_avg if continuity_metric_type == "jaccard" else "",
         "BLEURT_AVG": bleurt_avg,
-        "CONTINUITY_ROWS": continuity_rows or "| – | – | – |\n",
+    "CONTINUITY_ROWS": continuity_rows or "| – | – | – | – |\n",
+    "CONTINUITY_METRIC": continuity_metric_type,
+    "CASE_ID_MENTIONS": tmetrics.get('case_id_mentions',''),
+    "DEADLINE_MENTIONS": tmetrics.get('deadline_mentions',''),
+    "RESPONSIVENESS": tmetrics.get('responsiveness',''),
         "WHAT_HELPED_LATENCY": "",
         "BOTTLENECKS": "",
         "NEXT_STEPS": "",
         "ASR_CFG": Path(args.asr_cfg).name,
         "LLM_CFG": Path(args.llm_cfg).name,
         "TTS_CFG": Path(args.tts_cfg).name,
-        "TORCH": torch.__version__,
+    "VARIANT": args.variant or "N/A",
+    "TORCH": torch.__version__,
         "PYVER": platform.python_version(),
-        "FWVER": "",  # leave blank or fill if you track versions
-        "TTSVER": "",
+    "FWVER": fwver,
+    "TTSVER": ttsver,
     }
 
     out = fill(tpl, mapping)

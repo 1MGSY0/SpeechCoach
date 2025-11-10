@@ -32,6 +32,7 @@ def main():
     ap.add_argument("--asr_cfg", default="configs/asr.yaml")
     ap.add_argument("--llm_cfg", default="configs/llm.yaml")      # swap to llm_llamacpp.yaml to test TinyLlama
     ap.add_argument("--tts_cfg", default="configs/tts_lowlat.yaml")
+    ap.add_argument("--story_cfg", default="")
     ap.add_argument("--out_dir", default="logs/batch_out")
     ap.add_argument("--log", default="logs/session_batch.jsonl")
     args = ap.parse_args()
@@ -55,6 +56,16 @@ def main():
         device=tts_cfg.get("device","cuda")
     )
 
+    # story (optional)
+    story_text = ""
+    if args.story_cfg:
+        try:
+            with open(args.story_cfg, "r", encoding="utf-8") as f:
+                story = yaml.safe_load(f) or {}
+                story_text = story.get("scenario", "")
+        except Exception:
+            story_text = ""
+
     # state for continuity (concatenate previous ASR text)
     prev_ctx = ""
 
@@ -69,9 +80,10 @@ def main():
         t_asr1 = now_ms()
 
         # --- LLM ---
-        prompt = llm_cfg.get("template","You said: {asr_text}").format(asr_text=asr_res.text)
-        # include prev context for continuity (simple baseline)
-        prompt = f"{prev_ctx}\nUser: {asr_res.text}\nAssistant:"
+        base_prompt = llm_cfg.get("template","You said: {asr_text}").format(asr_text=asr_res.text)
+        ctx_part = f"{prev_ctx}" if prev_ctx else ""
+        story_part = f"Scenario: {story_text}\n" if story_text else ""
+        prompt = f"{story_part}{ctx_part}\nUser: {asr_res.text}\nAssistant:"
         t_llm0 = now_ms()
         reply_text = llm.generate(prompt)
         t_llm1 = now_ms()
@@ -82,8 +94,10 @@ def main():
         tts.synth_to_file(reply_text, out_wav)
         t_tts1 = now_ms()
 
-        # Update context (keep small to stay realistic)
-        prev_ctx = (prev_ctx + f"\nUser: {asr_res.text}\nAssistant: {reply_text}").splitlines()[-10:]
+        # Update context (keep small to stay realistic) and keep as a single string
+        prev_ctx = "\n".join(
+            (prev_ctx + f"\nUser: {asr_res.text}\nAssistant: {reply_text}").splitlines()[-10:]
+        )
 
         e2e_ms = t_tts1 - t_asr0
         print(f"ASR_ms={t_asr1-t_asr0} LLM_ms={t_llm1-t_llm0} TTS_ms={t_tts1-t_tts0} E2E_ms={e2e_ms}")

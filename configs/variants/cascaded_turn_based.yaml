@@ -1,0 +1,2 @@
+variant: cascaded_turn_based
+notes: sequential processing: ASR -> LLM -> TTS

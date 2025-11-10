@@ -1,0 +1,2 @@
+variant: cascaded_streaming
+notes: partial ASR triggers concurrent LLM and TTS

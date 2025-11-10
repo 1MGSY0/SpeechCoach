@@ -1,0 +1,14 @@
+[
+    {
+        "scheme_id": 0,
+        "category_id": 1,
+        "category":  "Active Listening",
+        "description": "entails giving full attention to the speaker, understanding their message, responding thoughtfully, and remembering what was said. It involves being present in the conversation, avoiding interruptions, and showing empathy and understanding."
+    },
+    {
+        "scheme_id": 0,
+        "category_id": 2,
+        "category":  "Stay Close",
+        "description": "In a conversation, stay close means to maintain emotional proximity and supportiveness towards the other person. It involves showing genuine interest, providing reassurance, and being empathetic and attentive to their feelings and needs. This creates a sense of trust and safety, making the other person feel valued and understood."
+    }
+]

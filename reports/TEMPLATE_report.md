@@ -2,6 +2,7 @@
 
 **Date:** {{DATE}}  
 **Profile:** ASR={{ASR_MODEL}} | LLM={{LLM_MODEL}} | TTS={{TTS_MODEL}}  
+**Variant:** {{VARIANT}}  
 **Device:** {{DEVICE}} | **CUDA:** {{CUDA}} | **Driver:** {{DRIVER}}  
 
 ## 1) Latency (ms)
@@ -30,7 +31,12 @@
 - TTS cfg: {{TTS_CFG}}  
 - torch {{TORCH}} | Python {{PYVER}} | faster-whisper {{FWVER}} | TTS {{TTSVER}}
 
-## 5) References
+## 5) Training Metrics
+- Case ID mentions: {{CASE_ID_MENTIONS}}
+- Deadline mentions (YYYY-MM-DD): {{DEADLINE_MENTIONS}}
+- Responsiveness (fraction of non-empty replies): {{RESPONSIVENESS}}
+
+## 6) References
 - Cascaded streaming latency layout (telecom voice agent).  
 - Whisper ASR; faster-whisper speedups.  
 - Coqui TTS (FastPitch/HiFiGAN) for low latency; Bark for expressivity.  
