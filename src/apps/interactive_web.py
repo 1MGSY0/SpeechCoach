@@ -1,7 +1,7 @@
 """
 Prototype Web UI: FastAPI + WebSockets for streaming audio and live transcripts.
 
-Scope (MVP):
+Scope:
 - / (GET) serve minimal HTML/JS client.
 - /ws/audio accepts binary PCM16 16k mono frames from browser mic.
 - /ws/events provides a unified event stream (JSON messages) to clients:
@@ -27,8 +27,7 @@ import json
 from pathlib import Path
 from typing import Set, Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 import os
 import torch
@@ -312,3 +311,85 @@ async def shutdown_event():
 if __name__ == "__main__":
 	import uvicorn
 	uvicorn.run("src.apps.interactive_web:app", host="0.0.0.0", port=8000, reload=False)
+
+from fastapi import Query
+
+# Global variable to store the current mode
+current_mode = "streaming"
+
+@app.get("/api/set_mode")
+async def set_mode(mode: str = Query("streaming", regex="^(streaming|turn_based)$")):
+    global current_mode
+    current_mode = mode
+    await broadcast_debug(f"Mode set to: {current_mode}")
+    return JSONResponse({"status": "success", "mode": current_mode})
+
+@app.get("/api/get_mode")
+async def get_mode():
+    return JSONResponse({"mode": current_mode})
+
+@app.post("/api/submit_turn")
+async def submit_turn(request: Request):
+    data = await request.json()
+    user_text = data.get("text", "")
+
+    if not user_text:
+        return JSONResponse({"error": "No text provided"}, status_code=400)
+
+    try:
+        # Notify ASR, LLM, and TTS states
+        await broadcast_debug("ASR: Processing completed")
+        await broadcast_debug("LLM: Generating response")
+
+        # Process the text with LLM
+        llm_response = llm.generate(f"User: {user_text}\nAssistant:")
+        await broadcast_debug("LLM: Response generated")
+
+        # Generate TTS audio
+        audio_path = f"logs/response_{now_ms()}.wav"
+        await broadcast_debug("TTS: Generating audio")
+        tts.synth_to_file(llm_response, audio_path)
+        await broadcast_debug("TTS: Audio generated")
+
+        # Play the TTS audio
+        return JSONResponse({"text": llm_response, "audio_url": f"/static/{audio_path}"})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.websocket("/ws/audio/streaming")
+async def websocket_audio_streaming(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Handle streaming ASR
+            asr_result = asr.process_stream(data)
+            await websocket.send_text(asr_result)
+    except WebSocketDisconnect:
+        pass
+
+@app.websocket("/ws/audio/turn_based")
+async def websocket_audio_turn_based(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Handle turn-based ASR
+            asr_result = asr.process_turn(data)
+            await websocket.send_text(asr_result)
+    except WebSocketDisconnect:
+        pass
+
+@app.post("/api/stop_asr/turn_based")
+async def stop_asr_turn_based():
+    # Trigger submission automatically in turn-based mode
+    asr_result = asr.get_final_result()
+    return await submit_turn(Request(scope={"type": "http"}, receive=None, send=None, body={"text": asr_result}))
+
+@app.post("/api/stop_asr/streaming")
+async def stop_asr_streaming():
+    return JSONResponse({"status": "Streaming ASR stopped"})
+
+# Helper function for debug messages
+async def broadcast_debug(message: str):
+    print(f"DEBUG: {message}")

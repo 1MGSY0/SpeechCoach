@@ -1,4 +1,3 @@
-# src/eval/score_report.py
 import os
 # Reduce noisy backend imports/logs and avoid TensorFlow/JAX where possible
 os.environ.setdefault("TRANSFORMERS_NO_TF", "1")  # prevent transformers from loading TensorFlow
