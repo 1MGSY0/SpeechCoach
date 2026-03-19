@@ -1,13 +1,12 @@
 """Simple asyncio orchestrator wiring streaming ASR -> LLM token stream -> clause TTS.
 
-Usage example (pseudo):
 	orch = Orchestrator(asr_stream, llm, tts, logger)
 	await orch.run_session(audio_source())
 
-This is a baseline scaffold; real implementation should:
- - Handle cancellation / barge-in.
- - Include time-to-first-audio metrics.
- - Support overlapping playback.
+Implement todo:
+ - Handle cancellation / barge-in
+ - Include time-to-first-audio metrics
+ - Support overlapping playback
 """
 
 import asyncio
@@ -53,14 +52,14 @@ class Orchestrator:
 	async def feed_audio(self, audio_iter: AsyncIterable[bytes]):
 		import numpy as np
 		async for chunk in audio_iter:
-			# Compute RMS to detect pauses (silence runs)
+			# Compute RMS to detect pauses
 			arr = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32768.0
 			rms = float(np.sqrt(np.mean(arr**2))) if arr.size else 0.0
 			if rms < self.pause_rms_thresh:
 				self._silence_run += 1
 			else:
 				self._silence_run = 0
-			# Always feed ASR (we simulate capture even while assistant replies); overlap buffering is handled in llm_task
+			# Always feed ASR (simulate capture even while assistant replies); overlap buffering is handled in llm_task
 			self.asr_stream.accept_audio(chunk)
 			partials = self.asr_stream.get_partials()
 			if partials:
@@ -68,7 +67,7 @@ class Orchestrator:
 					self._first_partial_ms = now_ms()
 				for _offset, delta in partials:
 					await self.partial_queue.put(delta)
-			# If we've sustained silence and not currently generating, signal a pause marker to llm_task
+			# If sustained silence and not currently generating, signal a pause marker to llm_task
 			if self._silence_run >= self.pause_min_chunks and not self.generating:
 				await self.partial_queue.put("__PAUSE__")
 				self._silence_run = 0
@@ -78,7 +77,7 @@ class Orchestrator:
 	async def llm_task(self):
 		"""Multi-turn gating: repeatedly form user utterances and respond.
 
-		Start conditions (pause simulation):
+		Start conditions:
 		 - Accumulated user text >= min_llm_chars AND (pause marker OR punctuation OR debounce timeout).
 		Overlap buffering: while generating=True, new partials go to future_buffer. After reply, promote future_buffer.
 		"""

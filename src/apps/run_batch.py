@@ -34,6 +34,7 @@ def main():
     ap.add_argument("--story_cfg", default="")
     ap.add_argument("--out_dir", default="logs/batch_out")
     ap.add_argument("--log", default="logs/session_batch.jsonl")
+    ap.add_argument("--mode", choices=["streaming", "turn_based"], default="streaming", help="Processing mode: streaming or turn-based")
     args = ap.parse_args()
 
     Path(args.out_dir).mkdir(parents=True, exist_ok=True)
