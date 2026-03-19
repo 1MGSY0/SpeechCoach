@@ -21,7 +21,7 @@ import { UserContext } from '@/app/_context/UserContext'
 function UserInputDialog({children, serviceOption}) {
 
     const [selectedPersona, setSelectedPersona] = useState(null);
-    const [scenario, setScenario] = useState(null);
+    const [scenario, setScenario] = useState('');
     const createConvoRoom = useMutation(api.ConvoRoom.CreateNewRoom);
     const [loading, setLoading] = useState(false);
     const [openDialog, setOpenDialog] = useState(false);
@@ -70,7 +70,7 @@ function UserInputDialog({children, serviceOption}) {
                                 <Image src={persona.avatar} alt={persona.name}
                                     width={100}
                                     height={100}
-                                    className={`rounded-xl h-[100px] w-[auto] object-cover
+                                    className={`rounded-xl h-[100px] w-auto object-cover
                                     hover:scale-105 transition-all cursor-pointer p-1 border-primary
                                     ${selectedPersona?.name == persona.name && 'border'}`}/>
                                 <h2 className='text-center'>{persona.name}</h2>
