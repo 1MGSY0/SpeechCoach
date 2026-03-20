@@ -8,16 +8,19 @@ import { UserContext } from './_context/UserContext';
 
 export default function AuthProvider({ children }) {
     const user = useUser();
-    const CreateUser = useMutation(api.users.CreateUser);
-    const [userData,setUserData] = useState();
+    const CreateUser = useMutation(api.User.CreateUser);
+    const [userData, setUserData] = useState();
 
     useEffect(() => {
         console.log("User: ", user);
-        user && CreateNewUser();
+        if (user) {
+            CreateNewUser();
+        }
     }, [user]);
 
     const CreateNewUser = async () => {
         const result = await CreateUser({
+            userId: user.id,
             name: user.displayName,
             email: user.primaryEmail,
         });
@@ -27,7 +30,14 @@ export default function AuthProvider({ children }) {
 
     return (
         <div>
-            <UserContext.Provider value={{userData, setUserData}}>
+            <UserContext.Provider
+                value={{
+                    user,
+                    userId: user?.id ?? null,
+                    userData,
+                    setUserData,
+                }}
+            >
                 {children}
             </UserContext.Provider>
         </div>
