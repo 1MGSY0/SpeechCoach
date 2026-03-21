@@ -86,7 +86,7 @@ export const GetPersonaDetails = query({
 
         const conversations = await ctx.db
             .query("Conversations")
-            .filter(q => q.eq(q.field("personaId"), args.personaId))
+            .withIndex("by_personaId", (q) => q.eq("personaId", args.personaId))
             .collect();
 
         const conversationCount = conversations.length;
@@ -104,7 +104,7 @@ export const ListPersonas = query({
     handler: async (ctx, args) => {
         const personas = await ctx.db
             .query("Persona")
-            .filter(q => q.eq(q.field("userId"), args.userId))
+            .withIndex("by_userId", (q) => q.eq("userId", args.userId))
             .collect();
 
         const filtered = args.search

@@ -19,7 +19,7 @@ export default defineSchema({
         instructions: v.string(), // Instructions are required
         createdAt: v.string(), // Store timestamps as strings (ISO format)
         updatedAt: v.string(), // Store timestamps as strings (ISO format)
-    }),
+    }).index("by_userId", ["userId"]),
 
     Conversations: defineTable({
         name: v.string(), // Name is required
@@ -33,5 +33,5 @@ export default defineSchema({
         summary: v.optional(v.string()), // Optional summary as a string
         createdAt: v.string(), // Store timestamps as strings (ISO format)
         updatedAt: v.string(), // Store timestamps as strings (ISO format)
-    }),
+    }).index("by_personaId", ["personaId"]),
 });

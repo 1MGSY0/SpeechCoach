@@ -3,19 +3,23 @@ import { preloadQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 import PersonaView from "./_components/persona_view";
 import { LoadingState } from '@/components/loading-state';
-import { getServerUserAndConvexUser } from "@/lib/convex_user";
+import { getServerContext } from "@/lib/convex_user";
+import { PersonasListHeader } from "./_components/personalist-header";
 
 export default async function Page() {
-  const { convexUser } = await getServerUserAndConvexUser();
+  const { convexUserId } = await getServerContext();
 
   const preloadedPersonas = await preloadQuery(api.Persona.ListPersonas, {
-    userId: convexUser._id,
+    userId: convexUserId,
     search: undefined,
   });
 
   return (
-    <Suspense fallback={<LoadingState title="Loading..." description="Loading personas."/>}>
-      <PersonaView preloadedPersonas={preloadedPersonas} />
-    </Suspense>
+    <>
+      <PersonasListHeader />
+        <Suspense fallback={<LoadingState title="Loading..." description="Loading personas."/>}>
+          <PersonaView preloadedPersonas={preloadedPersonas} />
+        </Suspense>
+    </>
   );
 }
