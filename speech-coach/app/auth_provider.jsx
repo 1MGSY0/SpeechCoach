@@ -3,31 +3,42 @@
 import React, { useEffect, useState } from 'react';
 import { api } from "@/convex/_generated/api";
 import { useUser } from "@stackframe/stack";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { UserContext } from './_context/UserContext';
 
 export default function AuthProvider({ children }) {
     const user = useUser();
-    const CreateUser = useMutation(api.users.CreateUser);
-    const [userData,setUserData] = useState();
+    const CreateUser = useMutation(api.User.CreateUser);
+    const [createdUser, setCreatedUser] = useState(null);
+    const [isCreating, setIsCreating] = useState(false);
+    const userData = useQuery(api.User.GetUserByEmail, user ? { email: user.primaryEmail ?? "" } : "skip",);
 
     useEffect(() => {
-        console.log("User: ", user);
-        user && CreateNewUser();
-    }, [user]);
+        if (!user || userData !== null || isCreating) {return;}
+        if (!user.primaryEmail) {return;}
 
-    const CreateNewUser = async () => {
-        const result = await CreateUser({
-            name: user.displayName,
+        setIsCreating(true);
+        CreateUser({
+            name: user.displayName ?? "User",
             email: user.primaryEmail,
-        });
-        console.log(result);
-        setUserData(result);
-    }
+        })
+            .then((result) => {
+                setCreatedUser(result);
+            })
+            .finally(() => {
+                setIsCreating(false);
+            });
+    }, [user, userData, isCreating, CreateUser]);
 
     return (
         <div>
-            <UserContext.Provider value={{userData, setUserData}}>
+            <UserContext.Provider
+                value={{
+                    user,
+                    userData: userData ?? createdUser,
+                    setUserData: setCreatedUser,
+                }}
+            >
                 {children}
             </UserContext.Provider>
         </div>

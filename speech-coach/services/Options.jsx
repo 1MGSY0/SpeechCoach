@@ -1,10 +1,10 @@
 export const ServiceLists=[
     {
-        name:'Conversation Practice',
+        name:'Conversation',
         icon:'/Icon_3D_chat.png'
     },
-        {
-        name:'Persona Settings',
+    {
+        name:'Persona',
         icon:'/Icon_3D_agent.png'
     },
 ]
@@ -23,3 +23,21 @@ export const PersonaOptions=[
         avatar:'/p3.png'
     },
 ]
+
+export const ConversationStatus = [
+    {
+        status: 'upcoming',
+    },
+    {
+        status: 'active',
+    },
+    {
+        status: 'completed',
+    },
+    {
+        status: 'processing',
+    },
+    {
+        status: 'cancelled',
+    },
+];

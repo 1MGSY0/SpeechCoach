@@ -9,7 +9,8 @@
  */
 
 import type * as ConvoRoom from "../ConvoRoom.js";
-import type * as users from "../users.js";
+import type * as Persona from "../Persona.js";
+import type * as User from "../User.js";
 
 import type {
   ApiFromModules,
@@ -19,7 +20,8 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   ConvoRoom: typeof ConvoRoom;
-  users: typeof users;
+  Persona: typeof Persona;
+  User: typeof User;
 }>;
 
 /**
