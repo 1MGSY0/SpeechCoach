@@ -2,6 +2,7 @@
 
 import React from "react";
 import { usePreloadedQuery } from "convex/react";
+import { Button } from "@base-ui/react";
 
 export default function PersonaView ({ preloadedPersonas }) {
   const personas = usePreloadedQuery(preloadedPersonas);
@@ -10,5 +11,10 @@ export default function PersonaView ({ preloadedPersonas }) {
     return <div>No personas found. Click add persona to create one.</div>;
   }
 
-  return <div>{JSON.stringify(personas, null, 2)}</div>;
+  return (
+    <div>
+        <Button variant="outline" size="sm">Add Persona</Button>
+      {JSON.stringify(personas, null, 2)}
+    </div>
+    );
 }

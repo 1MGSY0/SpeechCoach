@@ -3,7 +3,6 @@ import {v} from "convex/values";
 
 export default defineSchema({
     User: defineTable({
-        userId: v.string(),// Stack auth user.id (canonical user identifier across the app)
         name: v.string(),
         email: v.string(),
     }),
@@ -16,7 +15,7 @@ export default defineSchema({
     
     Persona: defineTable({
         name: v.string(), // Name is required
-        userId: v.string(), // Foreign key reference to the user table
+        userId: v.id("User"), // Foreign key reference to the user table
         instructions: v.string(), // Instructions are required
         createdAt: v.string(), // Store timestamps as strings (ISO format)
         updatedAt: v.string(), // Store timestamps as strings (ISO format)
@@ -24,8 +23,8 @@ export default defineSchema({
 
     Conversations: defineTable({
         name: v.string(), // Name is required
-        userId: v.string(), // Foreign key reference to the user table
-        personaId: v.string(), // Foreign key reference to the persona table
+        userId: v.id("User"), // Foreign key reference to the user table
+        personaId: v.id("Persona"), // Foreign key reference to the persona table
         status: v.string(), // Enum-like field for meeting status
         startedAt: v.optional(v.string()), // Optional timestamp as a string
         endedAt: v.optional(v.string()), // Optional timestamp as a string

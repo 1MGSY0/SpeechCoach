@@ -4,8 +4,8 @@ import { mutation, query } from "./_generated/server";
 // Create a new Persona document
 export const CreatePersona = mutation({
     args: {
+        userId: v.id("User"),
         name: v.string(),
-        userId: v.string(),
         instructions: v.string(),
     },
     handler: async (ctx, args) => {
@@ -26,16 +26,16 @@ export const CreatePersona = mutation({
 // Update an existing Persona
 export const UpdatePersona = mutation({
     args: {
+        userId: v.id("User"),
         personaId: v.id("Persona"),
-        userId: v.string(),
         name: v.optional(v.string()),
         instructions: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
-        const { personaId, userId, name, instructions } = args;
+        const { personaId, name, instructions } = args;
 
         const existing = await ctx.db.get(personaId);
-        if (!existing || existing.userId !== userId) {
+        if (!existing || existing.userId !== args.userId) {
             throw new Error("Persona not found");
         }
 
@@ -58,8 +58,8 @@ export const UpdatePersona = mutation({
 // Remove a Persona, scoped to a user
 export const RemovePersona = mutation({
     args: {
+        userId: v.id("User"),
         personaId: v.id("Persona"),
-        userId: v.string(),
     },
     handler: async (ctx, args) => {
         const existing = await ctx.db.get(args.personaId);
@@ -75,8 +75,8 @@ export const RemovePersona = mutation({
 // Get details for a single Persona plus its conversation count
 export const GetPersonaDetails = query({
     args: {
+        userId: v.id("User"),
         personaId: v.id("Persona"),
-        userId: v.string(),
     },
     handler: async (ctx, args) => {
         const persona = await ctx.db.get(args.personaId);
@@ -98,7 +98,7 @@ export const GetPersonaDetails = query({
 // List Personas for a user with optional text search and conversation counts
 export const ListPersonas = query({
     args: {
-        userId: v.string(),
+        userId: v.id("User"),
         search: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
