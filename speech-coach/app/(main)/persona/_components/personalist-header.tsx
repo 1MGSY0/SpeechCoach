@@ -36,7 +36,6 @@ export const PersonasListHeader = () => {
           </Button>
         </div>
         <ScrollArea className={undefined}>
-            no data
 {/*           <div className="flex items-center gap-x-2 p-1">
             <PersonaSearchFilter />
             {isAnyFilterModified && (
