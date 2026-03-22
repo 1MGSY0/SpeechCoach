@@ -10,7 +10,7 @@ import { ConversationListHeader } from './_components/convoslist-header';
 const Page = async () => {
 
     const { convexUserId } = await getServerContext();
-    const preloadedConversations = await preloadQuery(api.Conversations.ListConversationsByUser, {
+    const preloadedConversations = await preloadQuery(api.Conversations.ListConversations, {
         userId: convexUserId,
     });
 

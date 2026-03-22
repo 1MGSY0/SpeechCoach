@@ -37,7 +37,7 @@ export const columns: ColumnDef<PersonasGetMany["items"][number]>[] = [
     accessorKey: "conversationCount",
     header: "Conversations",
     cell: ({ row }) => (
-      <Badge className="flex items-center gap-x-3 border-0">
+      <Badge className="inline-flex w-fit items-center gap-x-3 border-0">
         <VideoIcon className="text-blue-700 size-4" />
         {row.original.conversationCount} {row.original.conversationCount === 1 ? "conversation" : "conversations"}
       </Badge>

@@ -121,31 +121,55 @@ export const GetConversationDetails = query({
     },
 });
 
-// List Conversations for a persona, scoped to a user
-export const ListConversationsByPersona = query({
+const withDuration = (conversation) => {
+    if (!conversation?.startedAt || !conversation?.endedAt) {
+        return { ...conversation, durationSeconds: 0 };
+    }
+
+    const startMs = Date.parse(conversation.startedAt);
+    const endMs = Date.parse(conversation.endedAt);
+
+    if (Number.isNaN(startMs) || Number.isNaN(endMs)) {
+        return { ...conversation, durationSeconds: 0 };
+    }
+
+    const durationMs = Math.max(0, endMs - startMs);
+    return { ...conversation, durationSeconds: Math.floor(durationMs / 1000) };
+};
+
+const withPersonaName = async (ctx, conversation) => {
+    if (!conversation?.personaId) {
+        return { ...conversation, personaName: null };
+    }
+
+    const persona = await ctx.db.get(conversation.personaId);
+    return { ...conversation, personaName: persona?.name ?? null };
+};
+
+// List Conversations for a user, optionally filtered by persona
+export const ListConversations = query({
     args: {
         userId: v.id("User"),
-        personaId: v.id("Persona"),
+        personaId: v.optional(v.id("Persona")),
     },
     handler: async (ctx, args) => {
+        if (args.personaId) {
+            const conversations = await ctx.db
+                .query("Conversations")
+                .withIndex("by_personaId", (q) => q.eq("personaId", args.personaId))
+                .collect();
+
+            const filtered = conversations.filter((conversation) => conversation.userId === args.userId);
+            const withDurations = filtered.map(withDuration);
+            return await Promise.all(withDurations.map((conversation) => withPersonaName(ctx, conversation)));
+        }
+
         const conversations = await ctx.db
-            .query("Conversations")
-            .withIndex("by_personaId", (q) => q.eq("personaId", args.personaId))
-            .collect();
-
-        return conversations.filter((conversation) => conversation.userId === args.userId);
-    },
-});
-
-// List Conversations for a user
-export const ListConversationsByUser = query({
-    args: {
-        userId: v.id("User"),
-    },
-    handler: async (ctx, args) => {
-        return await ctx.db
             .query("Conversations")
             .withIndex("by_userId", (q) => q.eq("userId", args.userId))
             .collect();
+
+        const withDurations = conversations.map(withDuration);
+        return await Promise.all(withDurations.map((conversation) => withPersonaName(ctx, conversation)));
     },
 });

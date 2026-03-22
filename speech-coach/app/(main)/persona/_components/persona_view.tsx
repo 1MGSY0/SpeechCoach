@@ -1,6 +1,6 @@
 "use client";
 
-import { DataTable } from "./data-table";
+import { DataTable } from "@/components/data-table";
 import { columns} from "./columns";
 import { usePersonaFilters } from "../hooks/use-persona-filters";
 import { DataPagination } from "./data-pagination";
