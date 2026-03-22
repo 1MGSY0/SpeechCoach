@@ -26,7 +26,7 @@ export const ResponsiveDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg z-50" overlayClassName="z-40">
+      <DialogContent className="sm:max-w-lg z-50" overlayClassName="z-40" closeButtonClassName={undefined} >
         <DialogHeader className="text-left ml-5">
           <DialogTitle className="text-lg font-semibold" >{title}</DialogTitle>
           <DialogDescription className="text-muted-foreground" >

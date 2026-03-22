@@ -68,15 +68,17 @@ export const columns: ColumnDef<ConversationGetMany[number]>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const StatusIcon = statusIconMap[row.original.status];
+      const status = row.original.status as keyof typeof statusIconMap;
+      const StatusIcon = statusIconMap[status];
+      
       return (
         <Badge 
             variant="outline" 
             className={cn(
               "rounded-md capitalize [&>svg]:size-4 text-muted-foreground", 
-              statusColorMap[row.original.status]as keyof typeof statusColorMap)}>
+              statusColorMap[status])}>
           <StatusIcon 
-            className={cn("size-4 pr-1", row.original.status === "processing" && "animate-spin")}/>
+            className={cn("size-4 pr-1", status === "processing" && "animate-spin")}/>
           {row.original.status}
         </Badge>
       );

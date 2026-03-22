@@ -1,3 +1,5 @@
+"use client"
+
 import { ReactNode, useEffect, useState } from "react";
 import { ChevronsUpDownIcon, XIcon } from "lucide-react";
 
@@ -85,7 +87,7 @@ export const CommandSelect = ({
               className="overflow-hidden rounded-md border border-border bg-popover shadow-lg"
             >
               <div className="relative">
-                <CommandInput placeholder="Search..." onValueChange={onSearch} />
+                <CommandInput placeholder="Search..." onValueChange={onSearch} className={undefined} />
                 <Button
                   type="button"
                   variant="ghost"
@@ -97,20 +99,19 @@ export const CommandSelect = ({
                   <span className="sr-only">Close</span>
                 </Button>
               </div>
-              <CommandList>
-                <CommandEmpty>
+              <CommandList className={undefined}>
+                <CommandEmpty className={undefined}>
                   <span className="text-muted-foreground text-sm">
                     No options found
                   </span>
                 </CommandEmpty>
                 {options.map((option) => (
                   <CommandItem
-                    key={option.id}
-                    onSelect={() => {
-                      onSelect(option.value);
-                      setOpen(false);
-                    }}
-                  >
+                        key={option.id}
+                        onSelect={() => {
+                            onSelect(option.value);
+                            setOpen(false);
+                        } } className={undefined}>
                     {option.children}
                   </CommandItem>
                 ))}

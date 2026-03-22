@@ -1,3 +1,4 @@
+"use client"
 import { ResponsiveDialog } from "@/components/responsive-dialog";
 import { useRouter } from "next/navigation";
 
