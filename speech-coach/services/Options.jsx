@@ -24,20 +24,3 @@ export const PersonaOptions=[
     },
 ]
 
-export const ConversationStatus = [
-    {
-        status: 'upcoming',
-    },
-    {
-        status: 'active',
-    },
-    {
-        status: 'completed',
-    },
-    {
-        status: 'processing',
-    },
-    {
-        status: 'cancelled',
-    },
-];

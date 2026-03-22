@@ -1,7 +1,5 @@
 "use client";
 
-import React from "react";
-
 import { DataTable } from "./data-table";
 import { columns} from "./columns";
 import { usePersonaFilters } from "../hooks/use-persona-filters";

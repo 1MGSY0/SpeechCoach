@@ -28,24 +28,23 @@ export const RemoveConfirmation = ({
 }: Props) => {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Delete persona</DialogTitle>
-                    <DialogDescription>
+            <DialogContent className={undefined}>
+                <DialogHeader className={undefined}>
+                    <DialogTitle className={undefined}>Delete persona</DialogTitle>
+                    <DialogDescription className={undefined}>
                         This will permanently delete this persona and remove{" "}
                         {conversationCount} associated{" "}
                         {conversationCount === 1 ? "conversation" : "conversations"}.
                     </DialogDescription>
                 </DialogHeader>
-                <DialogFooter>
+                <DialogFooter className={undefined} >
                     <DialogClose variant="outline" disabled={isDeleting}>
                         Cancel
                     </DialogClose>
                     <Button
                         variant="destructive"
                         onClick={onConfirm}
-                        disabled={isDeleting}
-                    >
+                        disabled={isDeleting} className={undefined}                    >
                         {isDeleting ? "Deleting..." : "Delete"}
                     </Button>
                 </DialogFooter>
