@@ -1,11 +1,19 @@
 "use client";
 
-import { usePreloadedQuery, type Preloaded } from "convex/react";
+import { useContext, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useMutation, usePreloadedQuery, type Preloaded } from "convex/react";
+
 import { api } from "@/convex/_generated/api";
 import { PersonaIdViewHeader } from "./persona-id-view-header";
+
 import { GeneratedAvatar } from "@/components/generated-avatar";
 import { VideoIcon } from "@phosphor-icons/react/dist/csr/Video";
 import { Badge } from "@/components/ui/badge";
+import { UserContext } from "@/app/_context/UserContext";
+import { RemoveConfirmation } from "./remove-confirmation";
+import { UpdatePersonaDialog } from "./update-persona-dialog";
 
 interface Props {
     preloadedPersona: Preloaded<typeof api.Persona.GetPersonaDetails>;
@@ -13,14 +21,70 @@ interface Props {
 
 export const PersonaIdView = ({ preloadedPersona }: Props) => {
     const personaDetail = usePreloadedQuery(preloadedPersona);
+    const router = useRouter();
+    const { userData } = useContext(UserContext) ?? {};
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const [updatePersonaDialogOpen, setUpdatePersonaDialogOpen] = useState(false);
+
+    const removePersona = useMutation(api.Persona.RemovePersona);
+
+    const handleRemove = () => {
+        setIsDeleteOpen(true);
+    };
+
+    const confirmRemove = async () => {
+        if (!userData?._id) {
+            toast.error("User record not ready yet. Try again.");
+            return;
+        }
+
+        try {
+            setIsDeleting(true);
+            await removePersona({
+                userId: userData._id,
+                personaId: personaDetail._id,
+            });
+            toast.success("Persona deleted.");
+            setIsDeleteOpen(false);
+            router.push("/persona");
+            router.refresh();
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Something went wrong.");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+ 
+    if (!personaDetail) {
+        return (
+            <div className="flex-1 pb-4 px-4 md:px-8 flex flex-col gap-y-4">
+                <p>Persona not found.</p>
+            </div>
+        );
+    }
+
 
     return (
         <div className="flex-1 pb-4 px-4 md:px-8 flex flex-col gap-y-4">
+            <UpdatePersonaDialog
+                open={updatePersonaDialogOpen}
+                onOpenChange={setUpdatePersonaDialogOpen}
+                initialValues={personaDetail}
+            />
+            <RemoveConfirmation
+                open={isDeleteOpen}
+                onOpenChange={setIsDeleteOpen}
+                onConfirm={confirmRemove}
+                isDeleting={isDeleting}
+                conversationCount={personaDetail.conversationCount}
+            />
             <PersonaIdViewHeader
                 personaId={personaDetail._id}
                 personaName={personaDetail.name}
-                onEdit={() => {}}
-                onRemove={() => {}}
+                onEdit={() => setUpdatePersonaDialogOpen(true)}
+                onRemove={handleRemove}
             />
             <div className="bg-white rounded-lg border">
                 <div className="px-4 py-5 gap-y-5 flex flex-col col-span-5">
