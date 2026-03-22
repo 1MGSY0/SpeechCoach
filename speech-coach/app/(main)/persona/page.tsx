@@ -1,5 +1,4 @@
 import React, { Suspense } from 'react';
-
 import { preloadQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 import { getServerContext } from "@/lib/convex_user";

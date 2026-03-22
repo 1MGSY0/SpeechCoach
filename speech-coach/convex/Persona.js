@@ -73,6 +73,12 @@ export const RemovePersona = mutation({
             throw new Error("Persona not found");
         }
 
+        const conversations = await ctx.db
+            .query("Conversations")
+            .withIndex("by_personaId", (q) => q.eq("personaId", args.personaId))
+            .collect();
+
+        await Promise.all(conversations.map((conversation) => ctx.db.delete(conversation._id)));
         await ctx.db.delete(args.personaId);
         return existing;
     },
