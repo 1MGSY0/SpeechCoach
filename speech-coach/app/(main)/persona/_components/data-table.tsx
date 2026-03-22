@@ -43,7 +43,7 @@ export function DataTable<TData, TValue>({
                     data-state={row.getIsSelected() && "selected"} 
                     className='cursor-pointer hover:bg-muted/5'>
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="whitespace-nowrap">
+                  <TableCell key={cell.id} className="whitespace-nowrap p-4">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}

@@ -8,7 +8,7 @@ import { GeneratedAvatar } from "@/components/generated-avatar";
 
 import { PersonasGetMany } from "../types";
 
-export const columns: ColumnDef<PersonasGetMany[number]>[] = [
+export const columns: ColumnDef<PersonasGetMany["items"][number]>[] = [
   {
     accessorKey: "name",
     header: "Persona Name",
