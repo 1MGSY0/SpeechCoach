@@ -144,12 +144,20 @@ export const ListPersonas = query({
         const totalPages = Math.max(1, Math.ceil(total / pageSize));
         const safePage = Math.max(1, Math.min(page, totalPages));
         const start = (safePage - 1) * pageSize;
-        const items = filtered
-            .slice(start, start + pageSize)
-            .map((p, index) => ({
-                ...p,
-                personaCount: start + index + 1,
-            }));
+        const pageItems = filtered.slice(start, start + pageSize);
+        const items = await Promise.all(
+            pageItems.map(async (persona) => {
+                const conversations = await ctx.db
+                    .query("Conversations")
+                    .withIndex("by_personaId", (q) => q.eq("personaId", persona._id))
+                    .collect();
+
+                return {
+                    ...persona,
+                    conversationCount: conversations.length,
+                };
+            })
+        );
 
 /*         console.log("ListPersonas page", {
             total,

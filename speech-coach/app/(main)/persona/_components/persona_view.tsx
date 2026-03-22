@@ -1,14 +1,17 @@
 "use client";
 
 import React from "react";
-import { usePreloadedQuery } from "convex/react";
+
 import { DataTable } from "./data-table";
 import { columns} from "./columns";
 import { usePersonaFilters } from "../hooks/use-persona-filters";
 import { DataPagination } from "./data-pagination";
 
+import { useRouter } from "next/navigation";
+import { usePreloadedQuery } from "convex/react";
 
 export default function PersonaView ({ preloadedPersonas }) {
+  const router = useRouter();
   const { items: personas, totalPages } = usePreloadedQuery(preloadedPersonas);
   const [filters, setFilters] = usePersonaFilters();
 
@@ -18,12 +21,15 @@ export default function PersonaView ({ preloadedPersonas }) {
 
   return (
     <div className="flex-1 pb-4 px-4 md:px-8 flex flex-col gap-y-4">
-        <DataTable data={personas} columns={columns}/>
-              <DataPagination 
-                page={filters.page}
-                totalPages={totalPages}
-                onPageChange={(page) => setFilters({ page })}
-              />
+        <DataTable 
+          onRowClick={(row) => router.push(`/persona/${row._id}`)}
+          data={personas} 
+          columns={columns}/>
+        <DataPagination 
+          page={filters.page}
+          totalPages={totalPages}
+          onPageChange={(page) => setFilters({ page })}
+        />
     </div>
     );
 }
