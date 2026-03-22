@@ -5,8 +5,9 @@ import { getServerContext } from '@/lib/convex_user';
 
 import ConversationView from './_components/convos-views';
 import { LoadingState } from '@/components/loading-state'
+import { ConversationListHeader } from './_components/convoslist-header';
 
-async function page() {
+const Page = async () => {
 
     const { convexUserId } = await getServerContext();
     const preloadedConversations = await preloadQuery(api.Conversations.ListConversationsByUser, {
@@ -14,7 +15,8 @@ async function page() {
     });
 
   return (
-    <>
+    <>  
+        <ConversationListHeader />
         <Suspense fallback={<LoadingState title="Loading..." description="Loading conversations."/>}>
             <ConversationView preloadedConversations={preloadedConversations} />
         </Suspense>
@@ -22,4 +24,4 @@ async function page() {
   )
 }
 
-export default page
+export default Page

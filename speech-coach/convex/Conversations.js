@@ -32,6 +32,8 @@ export const CreateConversation = mutation({
             updatedAt: now,
         });
 
+        // TODO: Create stream call, upsert stream users
+
         return conversationId;
     },
 });

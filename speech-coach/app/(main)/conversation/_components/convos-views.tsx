@@ -16,6 +16,3 @@ export default function ConversationView({ preloadedConversations }) {
     </div>
   );
 }
-
-// Persona: jh71at3z0n7p9wph3bfrk65cnn83amd1
-// User: js7dqx6xxqpz5shhm6t6vhm1bn83aqjw

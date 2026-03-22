@@ -1,11 +1,20 @@
+import { notFound } from 'next/navigation';
 import React from 'react'
 
-function page() {
-  return (
-    <div>
-      Conversation id Page
-    </div>
-  )
+interface Props {
+    params: Promise<{ conversationId: string }>;
 }
 
-export default page
+export default async function Page({ params }: Props) {
+    const { conversationId } = (await params) ?? {};
+    if (!conversationId || typeof conversationId !== "string") {
+        notFound();
+    }
+
+    return (
+      <div>
+        Conversation {conversationId} Page
+      </div>
+    )
+}
+
