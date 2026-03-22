@@ -1,5 +1,12 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import {
+    DEFAULT_PAGE,
+    DEFAULT_PAGE_SIZE,
+    MAX_PAGE_SIZE,
+    MIN_PAGE_SIZE,
+} from "../constants";
+
 
 // Create a new Persona document
 export const CreatePersona = mutation({
@@ -15,7 +22,6 @@ export const CreatePersona = mutation({
             name: args.name,
             userId: args.userId,
             instructions: args.instructions,
-            createdAt: now,
             updatedAt: now,
         });
 
@@ -99,25 +105,63 @@ export const GetPersonaDetails = query({
 export const ListPersonas = query({
     args: {
         userId: v.id("User"),
+        page: v.optional(v.number()),
+        pageSize: v.optional(v.number()),
         search: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
+        const page = args.page ?? DEFAULT_PAGE;
+        const rawPageSize = args.pageSize ?? DEFAULT_PAGE_SIZE;
+        const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(MIN_PAGE_SIZE, rawPageSize));
+        const search = args.search?.trim().toLowerCase();
+        const hasSearch = Boolean(search);
+
+/*         console.log("ListPersonas args", {
+            userId: args.userId,
+            page,
+            pageSize,
+            search: args.search ?? null,
+        }); */
+
         const personas = await ctx.db
             .query("Persona")
             .withIndex("by_userId", (q) => q.eq("userId", args.userId))
             .collect();
 
-        const filtered = args.search
-            ? personas.filter(p =>
-                    p.name.toLowerCase().includes(args.search.toLowerCase())
-                )
-            : personas;
-        
-        // throw new Error("Error fetching personas");
 
-        return filtered.map((p, index) => ({
-            ...p,
-            personaCount: index + 1,
-        }));
+        const filtered = hasSearch
+            ? personas.filter((p) => p.name.toLowerCase().includes(search))
+            : personas;
+
+/*         console.log("ListPersonas filtered", {
+            hasSearch,
+            count: filtered.length,
+        }); */
+
+        filtered.sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
+
+        const total = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        const safePage = Math.max(1, Math.min(page, totalPages));
+        const start = (safePage - 1) * pageSize;
+        const items = filtered
+            .slice(start, start + pageSize)
+            .map((p, index) => ({
+                ...p,
+                personaCount: start + index + 1,
+            }));
+
+/*         console.log("ListPersonas page", {
+            total,
+            totalPages,
+            safePage,
+            items: items.length,
+        }); */
+
+        return {
+            items,
+            total,
+            totalPages,
+        };
     },
 });

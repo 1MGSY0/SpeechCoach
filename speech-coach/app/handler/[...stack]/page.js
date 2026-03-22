@@ -1,5 +1,10 @@
-import { StackHandler } from "@stackframe/stack";
+import { StackHandler, StackProvider } from "@stackframe/stack";
+import { stackServerApp } from "@/stack/server";
 
 export default async function Handler() {
-  return <StackHandler fullPage />;
+  return (
+    <StackProvider app={stackServerApp}>
+      <StackHandler fullPage />
+    </StackProvider>
+  );
 }

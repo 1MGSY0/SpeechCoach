@@ -8,13 +8,12 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 import { NewPersonaDialog } from "./new-persona-dialog";
-// import { PersonaSearchFilter } from "./persona-search-filter";
-// import { usePersonaFilters } from "../../hooks/use-persona-filters";
-// import { NewPersonaDialog } from "./new-persona-dialog";
+import { PersonaSearchFilter } from "./persona-search-filter";
+import { usePersonaFilters } from "../hooks/use-persona-filters";
 
 export const PersonasListHeader = () => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-/*     const [filters, setFilters] = usePersonasFilters();
+    const [filters, setFilters] = usePersonaFilters();
     const isAnyFilterModified = !!filters.search;
 
     const onClearFilters = () => {
@@ -22,7 +21,7 @@ export const PersonasListHeader = () => {
         search: "",
         page: DEFAULT_PAGE,
     });
-    } */
+    }
 
   return (
     <>
@@ -36,8 +35,7 @@ export const PersonasListHeader = () => {
           </Button>
         </div>
         <ScrollArea className={undefined}>
-            no data
-{/*           <div className="flex items-center gap-x-2 p-1">
+          <div className="flex items-center gap-x-2 p-1">
             <PersonaSearchFilter />
             {isAnyFilterModified && (
               <Button className={undefined} variant="outline" size="sm" onClick={onClearFilters}>
@@ -45,7 +43,7 @@ export const PersonasListHeader = () => {
                 Clear
               </Button>
             )}
-          </div> */}
+          </div>
           <ScrollBar className={undefined} orientation="horizontal" />
         </ScrollArea>
       </div>
