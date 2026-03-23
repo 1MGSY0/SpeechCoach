@@ -119,10 +119,10 @@ export const ConversationForm = ({
           Name
         </label>
         <Input
-                  className={undefined} id="conversation-name"
-                  type="text"
-                  placeholder="e.g. Week 1 coaching"
-                  {...form.register("name")}        />
+          className={undefined} id="conversation-name"
+          type="text"
+          placeholder="e.g. Week 1 coaching"
+          {...form.register("name")}/>
         {form.formState.errors.name && (
           <p className="text-xs text-destructive">
             {form.formState.errors.name.message}
@@ -145,7 +145,7 @@ export const ConversationForm = ({
         />
         <p className="text-xs text-muted-foreground">
           Not found what you&apos;re looking for?{" "}
-          <button
+          <button  
             type="button"
             className="text-primary hover:underline"
             onClick={() => setOpenNewPersonaDialog(true)}
