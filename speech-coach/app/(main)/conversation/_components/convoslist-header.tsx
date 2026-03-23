@@ -8,21 +8,25 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 import { NewConversationDialog } from "./new-convo-dialog";
-
-/* import { PersonaSearchFilter } from "./persona-search-filter";
-import { usePersonaFilters } from "../hooks/use-persona-filters"; */
+import { ConversationSearchFilter } from "./conversation-search-filter";
+import { useConversationFilters } from "../hooks/use-conversation-filters";
+import { Status } from "@base-ui/react/autocomplete/index.parts";
+import { StatusFilter } from "./status-filter";
+import { PersonaFilter } from "./persona-filter";
 
 export const ConversationListHeader = () => {
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-/*     const [filters, setFilters] = usePersonaFilters();
-    const isAnyFilterModified = !!filters.search;
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [filters, setFilters] = useConversationFilters();
+  const isAnyFilterModified = !!filters.search || !!filters.status || !!filters.personaId;
 
-    const onClearFilters = () => {
+  const onClearFilters = () => {
     setFilters({
-        search: "",
-        page: DEFAULT_PAGE,
+      status: null,
+      personaId: "",
+      search: "",
+      page: DEFAULT_PAGE,
     });
-    } */
+  };
 
   return (
     <>
@@ -35,9 +39,11 @@ export const ConversationListHeader = () => {
             New Conversation
           </Button>
         </div>
-{/*         <ScrollArea className={undefined}>
+        <ScrollArea className={undefined}>
           <div className="flex items-center gap-x-2 p-1">
-            <PersonaSearchFilter />
+            <ConversationSearchFilter />
+            <StatusFilter />
+            <PersonaFilter />
             {isAnyFilterModified && (
               <Button className={undefined} variant="outline" size="sm" onClick={onClearFilters}>
                 <XCircleIcon />
@@ -46,7 +52,7 @@ export const ConversationListHeader = () => {
             )}
           </div>
           <ScrollBar className={undefined} orientation="horizontal" />
-        </ScrollArea> */}
+        </ScrollArea>
       </div>
     </>
   );
