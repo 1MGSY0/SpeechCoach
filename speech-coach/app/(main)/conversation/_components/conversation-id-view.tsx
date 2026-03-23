@@ -116,10 +116,12 @@ export const ConversationIdView = ({ preloadedConversation }: Props) => {
                 </span>
               )}
             </div>
+            <div className="p-5 ml-auto">
+                <Badge variant="outline" className="w-fit capitalize">
+                    {conversation.status}
+                </Badge>
+            </div>
           </div>
-          <Badge variant="outline" className="w-fit capitalize">
-            {conversation.status}
-          </Badge>
         </div>
       </div>
 
@@ -127,7 +129,7 @@ export const ConversationIdView = ({ preloadedConversation }: Props) => {
       {isProcessing && <ProcessingState />}
       {isCompleted && <CompletedState data={conversation} />}
       {isActive && <ActiveState conversationId={conversation._id} />}
-      {isUpcoming && <UpcomingState />}
+      {isUpcoming && <UpcomingState conversationId={conversation._id}/>}
     </div>
   );
 };
