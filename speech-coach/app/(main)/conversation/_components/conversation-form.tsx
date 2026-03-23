@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useContext, useState } from "react";
+import React, { useContext, useMemo, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { CommandSelect } from "@/components/command-select";
 import { GeneratedAvatar } from "@/components/generated-avatar";
 import { NewPersonaDialog } from "@/app/(main)/persona/_components/new-persona-dialog";
+import type { ConversationGetOne } from "../types";
 
 const conversationSchema = z.object({
   name: z.string().min(1, "Name is required."),
@@ -27,21 +28,25 @@ type ConversationFormValues = z.infer<typeof conversationSchema>;
 interface ConversationFormProps {
   onSuccess?: (id?: string) => void;
   onCancel?: () => void;
+  initialValues?: ConversationGetOne;
 }
 
 export const ConversationForm = ({
   onSuccess,
   onCancel,
+  initialValues,
 }: ConversationFormProps) => {
   const { userData } = useContext(UserContext) ?? {};
   const createConversation = useMutation(api.Conversations.CreateConversation);
+  const updateConversation = useMutation(api.Conversations.UpdateConversation);
   const [openNewPersonaDialog, setOpenNewPersonaDialog] = useState(false);
+  const isEdit = Boolean(initialValues?._id);
 
   const form = useForm<ConversationFormValues>({
     resolver: zodResolver(conversationSchema),
     defaultValues: {
-      name: "",
-      personaId: "",
+      name: initialValues?.name ?? "",
+      personaId: initialValues?.personaId ?? "",
     },
   });
 
@@ -53,21 +58,24 @@ export const ConversationForm = ({
   );
   const personas = personasResponse?.items ?? [];
   const selectedPersonaId = form.watch("personaId");
-  const personaOptions = personas.map((persona) => ({
-    id: persona._id,
-    value: persona._id,
-    children: (
-        <div className="flex items-center gap-2">
-          <GeneratedAvatar
-                seed={persona.name}
-                variant="botttsNeutral"
-                className="border size 6"
-          />
-          <span>{persona.name}</span>
-        </div>
-
-    ),
-  }));
+  const personaOptions = useMemo(
+    () =>
+      personas.map((persona) => ({
+        id: persona._id,
+        value: persona._id,
+        children: (
+          <div className="flex items-center gap-2">
+            <GeneratedAvatar
+              seed={persona.name}
+              variant="botttsNeutral"
+              className="border size 6"
+            />
+            <span>{persona.name}</span>
+          </div>
+        ),
+      })),
+    [personas]
+  );
 
   const onSubmit = async (values: ConversationFormValues) => {
     if (!userData?._id) {
@@ -76,14 +84,24 @@ export const ConversationForm = ({
     }
 
     try {
-      const conversationId = await createConversation({
-        userId: userData._id,
-        personaId: values.personaId as Id<"Persona">,
-        name: values.name,
-      });
+      if (isEdit && initialValues?._id) {
+        await updateConversation({
+          userId: userData._id,
+          conversationId: initialValues._id,
+          personaId: values.personaId as Id<"Persona">,
+          name: values.name,
+        });
+        onSuccess?.(initialValues._id);
+      } else {
+        const conversationId = await createConversation({
+          userId: userData._id,
+          personaId: values.personaId as Id<"Persona">,
+          name: values.name,
+        });
 
-      onSuccess?.(conversationId);
-      form.reset();
+        onSuccess?.(conversationId);
+        form.reset();
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Something went wrong.");
     }
@@ -119,7 +137,9 @@ export const ConversationForm = ({
         <CommandSelect
           options={personaOptions}
           value={selectedPersonaId}
-          onSelect={(value) => form.setValue("personaId", value, { shouldValidate: true })}
+          onSelect={(value) =>
+            form.setValue("personaId", value, { shouldValidate: true })
+          }
           placeholder={hasUser ? "Select a persona" : "Loading user..."}
           className="w-full"
         />
@@ -151,7 +171,7 @@ export const ConversationForm = ({
           </Button>
         )}
         <Button disabled={form.formState.isSubmitting} type="submit" className={undefined}>
-          Create
+          {isEdit ? "Save" : "Create"}
         </Button>
       </div>
       </form>

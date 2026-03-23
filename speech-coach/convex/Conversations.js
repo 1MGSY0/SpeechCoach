@@ -51,6 +51,7 @@ export const UpdateConversation = mutation({
     args: {
         userId: v.id("User"),
         conversationId: v.id("Conversations"),
+        personaId: v.optional(v.id("Persona")),
         name: v.optional(v.string()),
         status: v.optional(statusValidator),
         startedAt: v.optional(v.string()),
@@ -71,6 +72,9 @@ export const UpdateConversation = mutation({
 
         if (args.name !== undefined) {
             update.name = args.name;
+        }
+        if (args.personaId !== undefined) {
+            update.personaId = args.personaId;
         }
         if (args.status !== undefined) {
             update.status = args.status;
@@ -125,7 +129,8 @@ export const GetConversationDetails = query({
             return null;
         }
 
-        return conversation;
+        const withDurationResult = withDuration(conversation);
+        return await withPersonaName(ctx, withDurationResult);
     },
 });
 

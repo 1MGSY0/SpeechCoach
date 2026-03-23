@@ -28,7 +28,7 @@ export const RemoveConfirmation = ({
 }: Props) => {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className={undefined}>
+            <DialogContent className={undefined} overlayClassName={undefined} closeButtonClassName={undefined}>
                 <DialogHeader className={undefined}>
                     <DialogTitle className={undefined}>Delete persona</DialogTitle>
                     <DialogDescription className={undefined}>
