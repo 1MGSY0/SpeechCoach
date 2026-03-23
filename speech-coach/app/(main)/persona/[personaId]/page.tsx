@@ -2,8 +2,10 @@ import { preloadQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { getServerContext } from "@/lib/convex_user";
+
 import { Suspense } from "react";
 import { LoadingState } from "@/components/loading-state";
+
 import { PersonaIdView } from "../_components/persona-id-view";
 import { notFound } from "next/navigation";
 
