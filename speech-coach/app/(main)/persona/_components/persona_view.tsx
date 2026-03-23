@@ -3,7 +3,7 @@
 import { DataTable } from "@/components/data-table";
 import { columns} from "./columns";
 import { usePersonaFilters } from "../hooks/use-persona-filters";
-import { DataPagination } from "./data-pagination";
+import { DataPagination } from "../../../../components/data-pagination";
 
 import { useRouter } from "next/navigation";
 import { usePreloadedQuery } from "convex/react";
