@@ -1,7 +1,7 @@
 "use node";
 
 import { v } from "convex/values";
-import { action } from "./_generated/server";
+import { action, internalAction } from "./_generated/server";
 import { api } from "./_generated/api";
 import { getStreamVideo } from "../lib/stream-video.server";
 import { generateAvatarUri } from "../lib/avartar";
@@ -39,17 +39,15 @@ export const generateToken = action({
     ]);
 
     const expirationTime = Math.floor(Date.now() / 1000) + 3600;
-    const issuedAt = Math.floor(Date.now() / 1000) - 60;
 
     return getStreamVideo().generateUserToken({
       user_id: userId,
       exp: expirationTime,
-      validity_in_seconds: issuedAt,
     });
   },
 });
 
-export const setupStreamForConversation = action({
+export const setupStreamForConversation = internalAction({
   args: {
     userId: v.id("User"),
     personaId: v.id("Persona"),
