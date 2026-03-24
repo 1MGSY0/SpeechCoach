@@ -24,7 +24,7 @@ export const NewConversationDialog = ({
       <ConversationForm
         onSuccess={(id) => {
           onOpenChange(false);
-          router.push(`/conversations/${id}`);
+          router.push(`/conversation/${id}`);
         }}
         onCancel={() => onOpenChange(false)}
       />

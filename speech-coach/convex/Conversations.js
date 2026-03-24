@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+
 import { mutation, query } from "./_generated/server";
 import {
     DEFAULT_PAGE,
@@ -7,6 +8,7 @@ import {
     MIN_PAGE_SIZE,
 } from "../constants";
 import { ConversationStatus } from "../services/conversation-status";
+import { api } from "./_generated/api";
 
 const statusValidator = v.union(
     ...Object.values(ConversationStatus).map((status) => v.literal(status))
@@ -27,6 +29,7 @@ export const CreateConversation = mutation({
     },
     handler: async (ctx, args) => {
         const now = new Date().toISOString();
+
         const conversationId = await ctx.db.insert("Conversations", {
             name: args.name,
             userId: args.userId,
@@ -40,7 +43,12 @@ export const CreateConversation = mutation({
             updatedAt: now,
         });
 
-        // TODO: Create stream call, upsert stream users
+        await ctx.scheduler.runAfter(0, api.conversations_stream.setupStreamForConversation, {
+            userId: args.userId,
+            personaId: args.personaId,
+            conversationId,
+            name: args.name,
+        });
 
         return conversationId;
     },
