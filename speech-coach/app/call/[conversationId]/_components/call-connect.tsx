@@ -68,16 +68,9 @@ export const CallConnect = ({
       setCall(_call);
 
       return () => {
-<<<<<<< Updated upstream
-        if (_call.state.callingState !== CallingState.LEFT) {
-          _call.leave();
-          _call.endCall();
-          setCall(undefined);
-=======
         setCall(undefined);
         if (_call.state.callingState !== CallingState.LEFT) {
           void _call.leave().catch(() => {});
->>>>>>> Stashed changes
         }
       };
   }, [client, conversationId]);
