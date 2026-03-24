@@ -23,12 +23,12 @@ export const UpcomingState = ({
             Cancel conversation
             </Button> */}
             <Button /* disabled={isCancelling} */ className="w-full lg:w-auto">
-            <Link href={`/call/${conversationId}`}>
-                <div className="flex items-center gap-x-2">
-                    <VideoIcon />
-                    Start Conversation
-                </div>
-            </Link>
+                <Link href={`/call/${conversationId}`}>
+                    <div className="flex items-center gap-x-2">
+                        <VideoIcon />
+                        Start Conversation
+                    </div>
+                </Link>
             </Button>
         </div>
         <div className="px-4 py-5 flex flex-col gap-y-2">

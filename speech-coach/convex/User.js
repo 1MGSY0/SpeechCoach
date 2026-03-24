@@ -44,3 +44,12 @@ export const GetUserByEmail = query({
         return matches[0] ?? null;
     },
 });
+
+export const GetUserById = query({
+    args: {
+        userId: v.id("User"),
+    },
+    handler: async (ctx, args) => {
+        return await ctx.db.get(args.userId);
+    },
+});
