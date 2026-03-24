@@ -16,9 +16,12 @@ export const CallUI = ({ conversationName }: Props) => {
   const handleJoin = async () => {
     if (!call) return;
 
-    await call.join();
-
-    setShow("call");
+    try {
+      await call.join();
+      setShow("call");
+    } catch (error) {
+      console.error("Failed to join call:", error);
+    }
   };
 
   const handleLeave = () => {
