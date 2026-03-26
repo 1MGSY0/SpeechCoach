@@ -28,7 +28,7 @@ export default defineSchema({
         status: v.union(...CONVERSATION_STATUSES.map((status) => v.literal(status))), // Enum-like field for meeting status
         startedAt: v.optional(v.string()), // Optional timestamp as a string
         endedAt: v.optional(v.string()), // Optional timestamp as a string
-        transcriptUrl: v.optional(v.string()), // Optional URL as a string
+        transcriptText: v.optional(v.string()), // Optional transcript text as a string
         recordingUrl: v.optional(v.string()), // Optional URL as a string
         summary: v.optional(v.string()), // Optional summary as a string
         updatedAt: v.optional(v.string()), // Store timestamps as strings (ISO format)

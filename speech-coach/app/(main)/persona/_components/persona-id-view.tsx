@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { UserContext } from "@/app/_context/UserContext";
 import { RemoveConfirmation } from "./remove-confirmation";
 import { UpdatePersonaDialog } from "./update-persona-dialog";
+import { Section } from "@/components/ui/display-section";
+import { extractPersonaData } from "@/components/extract-persona";
 
 interface Props {
     preloadedPersona: Preloaded<typeof api.Persona.GetPersonaDetails>;
@@ -65,6 +67,8 @@ export const PersonaIdView = ({ preloadedPersona }: Props) => {
         );
     }
 
+    const data = extractPersonaData(personaDetail.instructions);
+
 
     return (
         <div className="flex-1 pb-4 px-4 md:px-8 flex flex-col gap-y-4">
@@ -103,10 +107,32 @@ export const PersonaIdView = ({ preloadedPersona }: Props) => {
                             <VideoIcon className="text-blue-700" />
                             {personaDetail.conversationCount} {personaDetail.conversationCount === 1 ? "conversation" : "conversations"}
                         </Badge>
-                    <div className="flex flex-col gap-y-4">
-                        <p className="text-lg font-medium">Instructions</p>
-                        <p className="text-neutral-800">{personaDetail.instructions}</p>
-                    </div>
+                        <div className="flex flex-col gap-y-5">
+
+                            {!data ? (
+                                <p className="text-neutral-800 whitespace-pre-wrap">
+                                {personaDetail.instructions}
+                                </p>
+                            ) : (
+                                <div className="space-y-4 text-sm">
+
+                                <Section title="Scenario" content={data.scenario} />
+
+                                <Section title="Goal" content={data.conversation_goal} />
+
+                                <Section title="Description" content={data.description} />
+
+                                <Section title="Personality" content={data.personality} />
+
+                                <Section title="World Info" content={data.wiAfter} />
+
+                                <Section title="Background / Lore" content={data.wiBefore} />
+
+                                <Section title="Example Message" content={data.mesExamples} />
+
+                                </div>
+                            )}
+                        </div>
                 </div>
             </div>
         </div>

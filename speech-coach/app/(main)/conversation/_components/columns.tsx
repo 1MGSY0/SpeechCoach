@@ -77,9 +77,8 @@ export const columns: ColumnDef<ConversationGetMany["items"][number]>[] = [
             className={cn(
               "rounded-md capitalize [&>svg]:size-4 text-muted-foreground", 
               statusColorMap[status])}>
-          <StatusIcon 
-            className={cn("size-4 pr-1", status === "processing" && "animate-spin")}/>
-          {row.original.status}
+            <StatusIcon className={cn("size-3", status === "processing" && "animate-spin")}/>
+            <p className="pl-2">{row.original.status}</p>
         </Badge>
       );
     },
@@ -97,7 +96,7 @@ export const columns: ColumnDef<ConversationGetMany["items"][number]>[] = [
             variant="outline" 
             className="inline-flex w-fit border-0 rounded-md capitalize [&>svg]:size-4 flex items-center gap-x-2">
             <ClockIcon className="size-4 text-muted-foreground" />
-            {row.original.duration ? formatDuration(row.original.duration) : "No duration"}
+            {row.original.durationSeconds ? formatDuration(row.original.durationSeconds) : "No duration"}
           </Badge>
         </div>
 

@@ -1,6 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 
 import type { ConversationGetOne } from "../../types";
+import { TranscriptView } from "./transcript-view";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { SummaryView } from "./summary-view";
 
 type ConversationDetails = NonNullable<ConversationGetOne>;
 
@@ -12,48 +15,35 @@ export const CompletedState = ({ data }: Props) => {
   const durationSeconds = data.durationSeconds ?? data.duration ?? 0;
 
   return (
-    <div className="bg-white rounded-lg border">
-      <div className="px-4 py-5 flex flex-col gap-y-4">
-        <div className="flex items-center gap-x-2">
-          <Badge variant="outline" className="w-fit capitalize">
-            Completed
-          </Badge>
-          {durationSeconds > 0 && (
-            <span className="text-sm text-muted-foreground">
-              Duration: {Math.round(durationSeconds)}s
-            </span>
-          )}
-        </div>
+    <div className="rounded-lg border bg-white">
+      <div className="px-4 py-5">
+        <Tabs defaultValue="summary" className="w-full">
+          <TabsList variant="line" className="mb-4">
+            <TabsTrigger value="summary" className="text-sm font-bold text-primary">Summary</TabsTrigger>
+            <TabsTrigger value="transcript" className="text-sm font-bold text-primary">Transcript</TabsTrigger>
+          </TabsList>
 
-        {data.summary && (
-          <div className="space-y-1">
-            <p className="text-sm font-medium">Summary</p>
-            <p className="text-sm text-muted-foreground">{data.summary}</p>
-          </div>
-        )}
+          <TabsContent value="summary" className="mt-0">
+            {data.summary ? (
+              <SummaryView summary={data.summary} />
+            ) : (
+              <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                No summary available.
+              </div>
+            )}
+          </TabsContent>
 
-        <div className="flex flex-col gap-y-2">
-          {data.transcriptUrl && (
-            <a
-              className="text-sm text-primary hover:underline"
-              href={data.transcriptUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              View transcript
-            </a>
-          )}
-          {data.recordingUrl && (
-            <a
-              className="text-sm text-primary hover:underline"
-              href={data.recordingUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Listen to recording
-            </a>
-          )}
-        </div>
+          <TabsContent value="transcript" className="mt-0">
+            <div className="flex flex-col gap-y-2">
+              <TranscriptView
+                transcript={data.transcriptText}
+                onUserLineClick={(turn, index) => {
+                  console.log("User line clicked:", index, turn);
+                }}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
