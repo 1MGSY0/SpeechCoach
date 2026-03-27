@@ -25,7 +25,6 @@ export default async function Page({ params }: Props) {
         conversationId: conversationConvexId,
     });
 
-
     //TODO; prefetch get transcript
 
     return (

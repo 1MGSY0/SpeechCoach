@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { GeneratedAvatar } from "@/components/generated-avatar";
 
 import { PersonasGetMany } from "../types";
+import { extractPersonaData } from "@/components/extract-persona";
 
 export const columns: ColumnDef<PersonasGetMany["items"][number]>[] = [
   {
@@ -27,7 +28,7 @@ export const columns: ColumnDef<PersonasGetMany["items"][number]>[] = [
         <div className="flex items-center gap-x-2">
           <CornerDownRightIcon className="size-3 text-muted-foreground" />
           <span className="text-sm text-muted-foreground max-w-[200px] truncate capitalize">
-            {row.original.instructions}
+            {extractPersonaData(row.original.instructions)?.scenario || row.original.instructions}
           </span>
         </div>
       </div>

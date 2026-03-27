@@ -1,4 +1,3 @@
-import "server-only";
 import { StreamClient } from "@stream-io/node-sdk";
 
 let cachedClient: StreamClient | null = null;

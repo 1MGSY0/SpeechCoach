@@ -81,17 +81,6 @@ export const setupStreamForConversation = internalAction({
           conversationId: String(args.conversationId),
           conversationName: args.name,
         },
-        settings_override: {
-          transcription: {
-            language: "en",
-            mode: "auto-on",
-            closed_caption_mode: "auto-on",
-          },
-          recording: {
-            mode: "auto-on",
-            quality: "1080p",
-          },
-        },
       },
     });
 

@@ -19,6 +19,7 @@ import { UpcomingState } from "./states/upcoming-state";
 import { CancelledState } from "./states/cancelled-state";
 import { ProcessingState } from "./states/processing-state";
 import { CompletedState } from "./states/completed-state";
+import { extractPersonaData } from "@/components/extract-persona";
 
 interface Props {
   preloadedConversation: Preloaded<typeof api.Conversations.GetConversationDetails>;
@@ -103,11 +104,16 @@ export const ConversationIdView = ({ preloadedConversation }: Props) => {
       <div className="bg-white rounded-lg border">
         <div className="px-4 py-5 flex flex-col gap-y-4">
           <div className="flex items-center gap-x-3">
-            <GeneratedAvatar
-              variant="botttsNeutral"
-              seed={conversation.personaName ?? conversation.name}
-              className="size-10"
-            />
+            <div
+              className="cursor-pointer inline-flex rounded-full hover:opacity-80 transition"
+              onClick={() => router.push(`/persona/${conversation.personaId}`)}
+            >
+              <GeneratedAvatar
+                variant="botttsNeutral"
+                seed={conversation.personaName}
+                className="size-10"
+              />
+            </div>
             <div className="flex flex-col">
               <h2 className="text-2xl font-medium">{conversation.name}</h2>
               {conversation.personaName && (
@@ -122,6 +128,7 @@ export const ConversationIdView = ({ preloadedConversation }: Props) => {
                 </Badge>
             </div>
           </div>
+          <div>{extractPersonaData(conversation.instructions)?.scenario || conversation.instructions}</div>
         </div>
       </div>
 

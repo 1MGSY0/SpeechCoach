@@ -23,7 +23,7 @@ export const CreateConversation = mutation({
         status: v.optional(statusValidator),
         startedAt: v.optional(v.string()),
         endedAt: v.optional(v.string()),
-        transcriptUrl: v.optional(v.string()),
+        transcriptText: v.optional(v.string()),
         recordingUrl: v.optional(v.string()),
         summary: v.optional(v.string()),
     },
@@ -37,7 +37,7 @@ export const CreateConversation = mutation({
             status: args.status ?? "upcoming",
             startedAt: args.startedAt,
             endedAt: args.endedAt,
-            transcriptUrl: args.transcriptUrl,
+            transcriptText: args.transcriptText,
             recordingUrl: args.recordingUrl,
             summary: args.summary,
             updatedAt: now,
@@ -64,7 +64,7 @@ export const UpdateConversation = mutation({
         status: v.optional(statusValidator),
         startedAt: v.optional(v.string()),
         endedAt: v.optional(v.string()),
-        transcriptUrl: v.optional(v.string()),
+        transcriptText: v.optional(v.string()),
         recordingUrl: v.optional(v.string()),
         summary: v.optional(v.string()),
     },
@@ -93,8 +93,8 @@ export const UpdateConversation = mutation({
         if (args.endedAt !== undefined) {
             update.endedAt = args.endedAt;
         }
-        if (args.transcriptUrl !== undefined) {
-            update.transcriptUrl = args.transcriptUrl;
+        if (args.transcriptText !== undefined) {
+            update.transcriptText = args.transcriptText;
         }
         if (args.recordingUrl !== undefined) {
             update.recordingUrl = args.recordingUrl;
@@ -125,23 +125,6 @@ export const RemoveConversation = mutation({
     },
 });
 
-// Get details for a single Conversation
-export const GetConversationDetails = query({
-    args: {
-        userId: v.id("User"),
-        conversationId: v.id("Conversations"),
-    },
-    handler: async (ctx, args) => {
-        const conversation = await ctx.db.get(args.conversationId);
-        if (!conversation || conversation.userId !== args.userId) {
-            return null;
-        }
-
-        const withDurationResult = withDuration(conversation);
-        return await withPersonaName(ctx, withDurationResult);
-    },
-});
-
 const withDuration = (conversation) => {
     if (!conversation?.startedAt || !conversation?.endedAt) {
         return { ...conversation, durationSeconds: 0 };
@@ -159,13 +142,46 @@ const withDuration = (conversation) => {
 };
 
 const withPersonaName = async (ctx, conversation) => {
-    if (!conversation?.personaId) {
-        return { ...conversation, personaName: null };
-    }
+    const user = conversation?.userId ? await ctx.db.get(conversation.userId) : null;
 
     const persona = await ctx.db.get(conversation.personaId);
-    return { ...conversation, personaName: persona?.name ?? null };
+    return {
+        ...conversation,
+        personaName: persona?.name ?? null, 
+        instructions: persona?.instructions ?? null, 
+        userName: user?.name ?? null,
+    };
 };
+
+// Get details for a single Conversation
+export const GetConversationDetails = query({
+    args: {
+        userId: v.id("User"),
+        conversationId: v.id("Conversations"),
+    },
+    handler: async (ctx, args) => {
+        const conversation = await ctx.db.get(args.conversationId);
+        if (!conversation || conversation.userId !== args.userId) {
+            return null;
+        }
+
+        const withDurationResult = withDuration(conversation);
+        return await withPersonaName(ctx, withDurationResult);
+    },
+});
+
+export const GetConversationById = query({
+  args: {
+    conversationId: v.id("Conversations"),
+  },
+    handler: async (ctx, args) => {
+        const conversation = await ctx.db.get(args.conversationId);
+
+        const withDurationResult = withDuration(conversation);
+        return await withPersonaName(ctx, withDurationResult);
+    },
+});
+
 
 // List Conversations for a user, optionally filtered by persona
 export const ListConversations = query({

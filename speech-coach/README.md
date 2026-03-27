@@ -48,7 +48,21 @@ npm run dev
 docker compose up
 npx convex dev
 
+### Backend
+uv run main.py serve --host 0.0.0.0 --port 8000
+
+### inngest
+npx inngest-cli@latest dev
+
 urls
 main webpage: http://localhost:3000/
 authentication: http://localhost:3000/handler/sign-up
 convex: http://localhost:6791/
+
+
+
+
+  try { Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/voice-agent/events" -ContentType "application/json" -Headers @{ "x-pipeline-token" = "speech-coach-pipeline-secret-token" } -Body '{"type":"call.transcription_ready","conversationId":"jn7bag1yaj02s26061hgvxesex83nka3","userId":"js7dqx6xxqpz5shhm6t6vhm1bn83aqjw","summary":"ok"}'} catch { $_.Exception.Response.StatusCode.value__ ; $_.Exception.Response.StatusDescription ; $_.Exception.Message }
+
+
+  try { Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/voice-agent/events" -ContentType "application/json" -Body '{"type":"call.transcription_ready","conversationId":"jn7bag1yaj02s26061hgvxesex83nka3","userId":"js7dqx6xxqpz5shhm6t6vhm1bn83aqjw","summary":"ok"}'} catch { $_.Exception.Response.StatusCode.value__ ; $_.Exception.Response.StatusDescription ; $_.Exception.Message }
