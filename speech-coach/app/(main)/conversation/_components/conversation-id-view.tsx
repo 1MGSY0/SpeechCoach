@@ -23,10 +23,12 @@ import { extractPersonaData } from "@/components/extract-persona";
 
 interface Props {
   preloadedConversation: Preloaded<typeof api.Conversations.GetConversationDetails>;
+  preloadedGrading: Preloaded<typeof api.ConversationAssessment.GetLatestAssessmentFullByConversationId>;
 }
 
-export const ConversationIdView = ({ preloadedConversation }: Props) => {
+export const ConversationIdView = ({ preloadedConversation, preloadedGrading }: Props) => {
   const conversation = usePreloadedQuery(preloadedConversation);
+  const grading = usePreloadedQuery(preloadedGrading);
   const router = useRouter();
   const { userData } = useContext(UserContext) ?? {};
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -134,7 +136,7 @@ export const ConversationIdView = ({ preloadedConversation }: Props) => {
 
       {isCancelled && <CancelledState />}
       {isProcessing && <ProcessingState />}
-      {isCompleted && <CompletedState data={conversation} />}
+      {isCompleted && <CompletedState data={conversation} gradingData={grading}/>}
       {isActive && <ActiveState conversationId={conversation._id} />}
       {isUpcoming && <UpcomingState conversationId={conversation._id}/>}
     </div>

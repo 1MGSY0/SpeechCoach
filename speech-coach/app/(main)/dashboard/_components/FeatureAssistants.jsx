@@ -17,6 +17,8 @@ function FeatureAssistants() {
             router.push('/conversation');
         } else if (service.name === 'Persona') {
             router.push('/persona');
+        } else if (service.name === 'Rubric') {
+            router.push('/rubric');
         }
     };
 
@@ -25,9 +27,8 @@ return (
             <div className='flex justify-between items-center mb-10'>
                     <div>       
                             <h2 className='font-medium text-gray-500'>Dashboard</h2>
-                            <h2 className='text-3xl font-bold'>Hi, {user?.displayName}!</h2>  
+                            <h2 className='text-3xl font-bold text-primary'>Hi, {user?.displayName}!</h2>  
                     </div>
-                    <Button>Profile</Button>
             </div>
             <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mt-10'>
                     {ServiceLists.map((service, index) => (

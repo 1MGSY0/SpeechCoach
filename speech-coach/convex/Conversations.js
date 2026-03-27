@@ -19,6 +19,7 @@ export const CreateConversation = mutation({
     args: {
         userId: v.id("User"),
         personaId: v.id("Persona"),
+        rubricId: v.optional(v.id("AssessmentFramework")),
         name: v.string(),
         status: v.optional(statusValidator),
         startedAt: v.optional(v.string()),
@@ -41,6 +42,7 @@ export const CreateConversation = mutation({
             recordingUrl: args.recordingUrl,
             summary: args.summary,
             updatedAt: now,
+            rubricId: args.rubricId,
         });
 
         await ctx.scheduler.runAfter(0, api.conversations_stream.setupStreamForConversation, {
@@ -60,6 +62,7 @@ export const UpdateConversation = mutation({
         userId: v.id("User"),
         conversationId: v.id("Conversations"),
         personaId: v.optional(v.id("Persona")),
+        rubricId: v.optional(v.id("AssessmentFramework")),
         name: v.optional(v.string()),
         status: v.optional(statusValidator),
         startedAt: v.optional(v.string()),
@@ -84,6 +87,10 @@ export const UpdateConversation = mutation({
         if (args.personaId !== undefined) {
             update.personaId = args.personaId;
         }
+        if (args.rubricId !== undefined) {
+            update.rubricId = args.rubricId;
+        }
+
         if (args.status !== undefined) {
             update.status = args.status;
         }

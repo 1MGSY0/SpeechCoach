@@ -50,17 +50,23 @@ export async function POST(req: NextRequest) {
         status: "processing",
       });
 
-      await inngest.send({
-        name: "conversations/processing",
-        data: {
+      try {
+        await inngest.send({
+          name: "conversations/processing",
+          data: {
+            conversationId,
+            userId,
+          },
+        });
+      } catch (err) {
+        console.warn("⚠️ Inngest not connected — skipping event", {
           conversationId,
           userId,
-        },
-      });
-
+          error: err,
+        });
+      }
       break;
     }
   }
-
   return NextResponse.json({ status: "ok" });
 }
