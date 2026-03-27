@@ -96,7 +96,7 @@ export const columns: ColumnDef<ConversationGetMany["items"][number]>[] = [
             variant="outline" 
             className="inline-flex w-fit border-0 rounded-md capitalize [&>svg]:size-4 flex items-center gap-x-2">
             <ClockIcon className="size-4 text-muted-foreground" />
-            {row.original.durationSeconds ? formatDuration(row.original.durationSeconds) : "No duration"}
+            {row.original.durationSeconds != null ? formatDuration(row.original.durationSeconds) : "No duration"}
           </Badge>
         </div>
 

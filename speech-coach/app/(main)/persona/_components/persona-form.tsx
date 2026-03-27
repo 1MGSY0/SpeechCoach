@@ -22,9 +22,9 @@ const PERSONA_META_END = "</persona_meta>";
 const personaSchema = z.object({
   char_name: z.string().min(1, "Character name is required."),
   scenario: z.string().min(1, "Scenario is required."),
-  wiAfter: z.string().optional().default(""),
-  wiBefore: z.string().optional().default(""),
-  mesExamples: z.string().optional().default(""),
+  wiAfter: z.string(),
+  wiBefore: z.string(),
+  mesExamples: z.string(),
   description: z.string().min(1, "Description is required."),
   personality: z.string().min(1, "Personality is required."),
   conversation_goal: z.string().min(1, "Conversation goal is required."),
