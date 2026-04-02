@@ -7,4 +7,3 @@ export type ConversationGetOne = FunctionReturnType<typeof api.Conversations.Get
 
 export const ConversationStatus = ConversationStatusValues;
 export type ConversationStatus = (typeof ConversationStatusValues)[keyof typeof ConversationStatusValues];
-

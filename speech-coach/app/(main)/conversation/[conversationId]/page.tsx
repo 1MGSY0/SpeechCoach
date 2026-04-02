@@ -25,12 +25,17 @@ export default async function Page({ params }: Props) {
         conversationId: conversationConvexId,
     });
 
-    //TODO; prefetch get transcript
+    const preloadedGrading = await preloadQuery(api.ConversationAssessment.GetLatestAssessmentFullByConversationId, {
+        conversationId: conversationConvexId,
+    });
 
     return (
         <>
             <Suspense fallback={<LoadingState title="Loading..." description="Loading conversation."/>}>
-                <ConversationIdView preloadedConversation={preloadedConversation} />
+                <ConversationIdView
+                    preloadedConversation={preloadedConversation}
+                    preloadedGrading={preloadedGrading}
+                    />
             </Suspense>
         </>
     )

@@ -21,6 +21,7 @@ import type { ConversationGetOne } from "../types";
 const conversationSchema = z.object({
   name: z.string().min(1, "Name is required."),
   personaId: z.string().min(1, "Persona is required."),
+  rubricId: z.string().min(1, "Rubric is required."),
 });
 
 type ConversationFormValues = z.infer<typeof conversationSchema>;
@@ -28,7 +29,9 @@ type ConversationFormValues = z.infer<typeof conversationSchema>;
 interface ConversationFormProps {
   onSuccess?: (id?: string) => void;
   onCancel?: () => void;
-  initialValues?: ConversationGetOne;
+  initialValues?: ConversationGetOne & {
+    rubricId?: Id<"AssessmentFramework">;
+  };
 }
 
 export const ConversationForm = ({
@@ -47,17 +50,26 @@ export const ConversationForm = ({
     defaultValues: {
       name: initialValues?.name ?? "",
       personaId: initialValues?.personaId ?? "",
+      rubricId: initialValues?.rubricId ?? "",
     },
   });
 
-
   const hasUser = Boolean(userData?._id);
+
   const personasResponse = useQuery(
     api.Persona.ListPersonas,
     hasUser ? { userId: userData._id } : "skip"
   );
   const personas = personasResponse?.items ?? [];
+
+  const rubrics = useQuery(
+    api.AssessmentFramework.GetAllAssessmentFrameworks,
+    {}
+  ) ?? [];
+
   const selectedPersonaId = form.watch("personaId");
+  const selectedRubricId = form.watch("rubricId");
+
   const personaOptions = useMemo(
     () =>
       personas.map((persona) => ({
@@ -77,6 +89,23 @@ export const ConversationForm = ({
     [personas]
   );
 
+  const rubricOptions = useMemo(
+    () =>
+      rubrics.map((rubric) => ({
+        id: rubric._id,
+        value: rubric._id,
+        children: (
+          <div className="flex items-center justify-between w-full gap-2">
+            <span>{rubric.name}</span>
+            {rubric.isDefault ? (
+              <span className="text-xs text-muted-foreground">Default</span>
+            ) : null}
+          </div>
+        ),
+      })),
+    [rubrics]
+  );
+
   const onSubmit = async (values: ConversationFormValues) => {
     if (!userData?._id) {
       toast.error("User record not ready yet. Try again.");
@@ -89,6 +118,7 @@ export const ConversationForm = ({
           userId: userData._id,
           conversationId: initialValues._id,
           personaId: values.personaId as Id<"Persona">,
+          rubricId: values.rubricId as Id<"AssessmentFramework">,
           name: values.name,
         });
         onSuccess?.(initialValues._id);
@@ -96,6 +126,7 @@ export const ConversationForm = ({
         const conversationId = await createConversation({
           userId: userData._id,
           personaId: values.personaId as Id<"Persona">,
+          rubricId: values.rubricId as Id<"AssessmentFramework">,
           name: values.name,
         });
 
@@ -113,67 +144,89 @@ export const ConversationForm = ({
         open={openNewPersonaDialog}
         onOpenChange={setOpenNewPersonaDialog}
       />
+
       <form className="space-y-4 p-4" onSubmit={form.handleSubmit(onSubmit)}>
-      <div className="space-y-1">
-        <label className="text-xs font-medium" htmlFor="conversation-name">
-          Name
-        </label>
-        <Input
-          className={undefined} id="conversation-name"
-          type="text"
-          placeholder="e.g. Week 1 coaching"
-          {...form.register("name")}/>
-        {form.formState.errors.name && (
-          <p className="text-xs text-destructive">
-            {form.formState.errors.name.message}
-          </p>
-        )}
-      </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium" htmlFor="conversation-name">
+            Name
+          </label>
+          <Input
+            className={undefined} id="conversation-name"
+            type="text"
+            placeholder="e.g. Week 1 coaching"
+            {...form.register("name")}          />
+          {form.formState.errors.name && (
+            <p className="text-xs text-destructive">
+              {form.formState.errors.name.message}
+            </p>
+          )}
+        </div>
 
-      <div className="space-y-1">
-        <label className="text-xs font-medium" htmlFor="conversation-persona">
-          Persona
-        </label>
-        <CommandSelect
-          options={personaOptions}
-          value={selectedPersonaId}
-          onSelect={(value) =>
-            form.setValue("personaId", value, { shouldValidate: true })
-          }
-          placeholder={hasUser ? "Select a persona" : "Loading user..."}
-          className="w-full"
-        />
-        <p className="text-xs text-muted-foreground">
-          Not found what you&apos;re looking for?{" "}
-          <button  
-            type="button"
-            className="text-primary hover:underline"
-            onClick={() => setOpenNewPersonaDialog(true)}
-          >
-            Create new persona
-          </button>
-        </p>
-        {form.formState.errors.personaId && (
-          <p className="text-xs text-destructive">
-            {form.formState.errors.personaId.message}
+        <div className="space-y-1">
+          <label className="text-xs font-medium" htmlFor="conversation-persona">
+            Persona
+          </label>
+          <CommandSelect
+            options={personaOptions}
+            value={selectedPersonaId}
+            onSelect={(value) =>
+              form.setValue("personaId", value, { shouldValidate: true })
+            }
+            placeholder={hasUser ? "Select a persona" : "Loading user..."}
+            className="w-full"
+          />
+          <p className="text-xs text-muted-foreground">
+            Not found what you&apos;re looking for?{" "}
+            <button
+              type="button"
+              className="text-primary hover:underline"
+              onClick={() => setOpenNewPersonaDialog(true)}
+            >
+              Create new persona
+            </button>
           </p>
-        )}
-      </div>
+          {form.formState.errors.personaId && (
+            <p className="text-xs text-destructive">
+              {form.formState.errors.personaId.message}
+            </p>
+          )}
+        </div>
 
-      <div className="flex justify-between gap-x-2">
-        {onCancel && (
-          <Button
-                      variant="ghost"
-                      type="button"
-                      disabled={form.formState.isSubmitting}
-                      onClick={() => onCancel()} className={undefined}          >
-            Cancel
+        <div className="space-y-1">
+          <label className="text-xs font-medium" htmlFor="conversation-rubric">
+            Rubric
+          </label>
+          <CommandSelect
+            options={rubricOptions}
+            value={selectedRubricId}
+            onSelect={(value) =>
+              form.setValue("rubricId", value, { shouldValidate: true })
+            }
+            placeholder="Select a rubric"
+            className="w-full"
+          />
+          {form.formState.errors.rubricId && (
+            <p className="text-xs text-destructive">
+              {form.formState.errors.rubricId.message}
+            </p>
+          )}
+        </div>
+
+        <div className="flex justify-between gap-x-2">
+          {onCancel && (
+            <Button
+              variant="ghost"
+              type="button"
+              disabled={form.formState.isSubmitting}
+              onClick={() => onCancel()}
+            >
+              Cancel
+            </Button>
+          )}
+          <Button disabled={form.formState.isSubmitting} type="submit">
+            {isEdit ? "Save" : "Create"}
           </Button>
-        )}
-        <Button disabled={form.formState.isSubmitting} type="submit" className={undefined}>
-          {isEdit ? "Save" : "Create"}
-        </Button>
-      </div>
+        </div>
       </form>
     </>
   );

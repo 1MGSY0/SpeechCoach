@@ -7,20 +7,8 @@ export const ServiceLists=[
         name:'Persona',
         icon:'/Icon_3D_agent.png'
     },
-]
-
-export const PersonaOptions=[
     {
-        name:'Joanna',
-        avatar:'/p1.png'
-    },
-    {
-        name:'Sallie',
-        avatar:'/p2.png'
-    },
-    {
-        name:'Matthew',
-        avatar:'/p3.png'
+        name:'Rubric',
+        icon:'/Icon_3D_insight.png'
     },
 ]
-
