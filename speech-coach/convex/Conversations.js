@@ -20,13 +20,22 @@ export const CreateConversation = mutation({
         userId: v.id("User"),
         personaId: v.id("Persona"),
         rubricId: v.optional(v.id("AssessmentFramework")),
+        modelPipeline: v.optional(v.union(v.literal("gemini_realtime"), v.literal("gemini_cascade"))),
+        voiceGender: v.optional(v.union(v.literal("female"), v.literal("male"))),
+        voiceName: v.optional(v.string()),
+        semanticMemoryEnabled: v.optional(v.boolean()),
         name: v.string(),
         status: v.optional(statusValidator),
+        processingProgress: v.optional(v.number()),
+        processingStepTitle: v.optional(v.string()),
+        processingError: v.optional(v.union(v.string(), v.null())),
         startedAt: v.optional(v.string()),
         endedAt: v.optional(v.string()),
         transcriptText: v.optional(v.string()),
         recordingUrl: v.optional(v.string()),
         summary: v.optional(v.string()),
+        speechMetrics: v.optional(v.any()),
+        memoryMetrics: v.optional(v.any()),
     },
     handler: async (ctx, args) => {
         const now = new Date().toISOString();
@@ -36,13 +45,22 @@ export const CreateConversation = mutation({
             userId: args.userId,
             personaId: args.personaId,
             status: args.status ?? "upcoming",
+            processingProgress: args.processingProgress,
+            processingStepTitle: args.processingStepTitle,
+            processingError: args.processingError,
             startedAt: args.startedAt,
             endedAt: args.endedAt,
             transcriptText: args.transcriptText,
             recordingUrl: args.recordingUrl,
             summary: args.summary,
+            speechMetrics: args.speechMetrics,
+            memoryMetrics: args.memoryMetrics,
             updatedAt: now,
             rubricId: args.rubricId,
+            modelPipeline: args.modelPipeline,
+            voiceGender: args.voiceGender,
+            voiceName: args.voiceName,
+            semanticMemoryEnabled: args.semanticMemoryEnabled ?? true,
         });
 
         await ctx.scheduler.runAfter(0, api.conversations_stream.setupStreamForConversation, {
@@ -63,13 +81,22 @@ export const UpdateConversation = mutation({
         conversationId: v.id("Conversations"),
         personaId: v.optional(v.id("Persona")),
         rubricId: v.optional(v.id("AssessmentFramework")),
+        modelPipeline: v.optional(v.union(v.literal("gemini_realtime"), v.literal("gemini_cascade"))),
+        voiceGender: v.optional(v.union(v.literal("female"), v.literal("male"))),
+        voiceName: v.optional(v.string()),
+        semanticMemoryEnabled: v.optional(v.boolean()),
         name: v.optional(v.string()),
         status: v.optional(statusValidator),
+        processingProgress: v.optional(v.number()),
+        processingStepTitle: v.optional(v.string()),
+        processingError: v.optional(v.union(v.string(), v.null())),
         startedAt: v.optional(v.string()),
         endedAt: v.optional(v.string()),
         transcriptText: v.optional(v.string()),
         recordingUrl: v.optional(v.string()),
         summary: v.optional(v.string()),
+        speechMetrics: v.optional(v.any()),
+        memoryMetrics: v.optional(v.any()),
     },
     handler: async (ctx, args) => {
         const existing = await ctx.db.get(args.conversationId);
@@ -90,9 +117,30 @@ export const UpdateConversation = mutation({
         if (args.rubricId !== undefined) {
             update.rubricId = args.rubricId;
         }
+        if (args.modelPipeline !== undefined) {
+            update.modelPipeline = args.modelPipeline;
+        }
+        if (args.voiceGender !== undefined) {
+            update.voiceGender = args.voiceGender;
+        }
+        if (args.voiceName !== undefined) {
+            update.voiceName = args.voiceName;
+        }
+        if (args.semanticMemoryEnabled !== undefined) {
+            update.semanticMemoryEnabled = args.semanticMemoryEnabled;
+        }
 
         if (args.status !== undefined) {
             update.status = args.status;
+        }
+        if (args.processingProgress !== undefined) {
+            update.processingProgress = args.processingProgress;
+        }
+        if (args.processingStepTitle !== undefined) {
+            update.processingStepTitle = args.processingStepTitle;
+        }
+        if (args.processingError !== undefined) {
+            update.processingError = args.processingError;
         }
         if (args.startedAt !== undefined) {
             update.startedAt = args.startedAt;
@@ -108,6 +156,12 @@ export const UpdateConversation = mutation({
         }
         if (args.summary !== undefined) {
             update.summary = args.summary;
+        }
+        if (args.speechMetrics !== undefined) {
+            update.speechMetrics = args.speechMetrics;
+        }
+        if (args.memoryMetrics !== undefined) {
+            update.memoryMetrics = args.memoryMetrics;
         }
 
         await ctx.db.patch(args.conversationId, update);

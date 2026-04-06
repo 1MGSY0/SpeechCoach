@@ -1,6 +1,12 @@
 # SpeechCoach
 Real-time speech-to-speech coaching agent (Windows + RTX laptop target).
 
+## Docker Pipeline
+
+For the full local web app + Convex + vision agent + Inngest stack, use the Docker guide:
+
+- [`docs/docker-pipeline.md`](/c:/Users/gushi/LTU/SpeechCoach/docs/docker-pipeline.md)
+
 ## Quickstart
 
 1) Create and activate a virtual environment (PowerShell):

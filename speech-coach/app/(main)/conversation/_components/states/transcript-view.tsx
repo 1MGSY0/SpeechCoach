@@ -17,7 +17,7 @@ type TurnFeedback = {
   maxScore?: number;
   feedback?: string;
   evidence?: string[];
-  turnRefs?: number[];
+  turnRefs?: Array<{ text: string; timestamp: string }>;
   category?: {
     _id: string;
     name: string;
@@ -31,12 +31,14 @@ type TurnFeedback = {
 interface Props {
   transcript: string;
   gradingResults?: TurnFeedback[];
+  transcriptSeekSeconds?: number | null;
   onUserLineClick?: (turn: TranscriptTurn, index: number) => void;
 }
 
 export const TranscriptView = ({
   transcript,
   gradingResults = [],
+  transcriptSeekSeconds,
   onUserLineClick,
 }: Props) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -60,7 +62,13 @@ export const TranscriptView = ({
 
     for (const result of gradingResults) {
       for (const ref of result.turnRefs ?? []) {
-        const zeroIndex = ref - 1;
+        const targetSeconds = timestampToSeconds(ref.timestamp);
+        const zeroIndex = transcriptWithSeconds.findIndex(
+          (turn) => turn.seconds === targetSeconds
+        );
+
+        if (zeroIndex < 0) continue;
+
         const existing = map.get(zeroIndex) ?? [];
         existing.push(result);
         map.set(zeroIndex, existing);
@@ -68,7 +76,7 @@ export const TranscriptView = ({
     }
 
     return map;
-  }, [gradingResults]);
+  }, [gradingResults, transcriptWithSeconds]);
 
   const maxSeconds = useMemo(() => {
     if (transcriptWithSeconds.length === 0) return 0;
@@ -78,6 +86,14 @@ export const TranscriptView = ({
   useEffect(() => {
     setSliderValue(0);
   }, [transcript]);
+
+  useEffect(() => {
+    if (transcriptSeekSeconds == null) return;
+
+    const clampedSeconds = Math.max(0, Math.min(transcriptSeekSeconds, maxSeconds));
+    setSliderValue(clampedSeconds);
+    scrollToTimestamp(clampedSeconds);
+  }, [maxSeconds, transcriptSeekSeconds]);
 
   const findClosestTurnIndex = (targetSeconds: number) => {
     if (transcriptWithSeconds.length === 0) return -1;
@@ -196,11 +212,27 @@ export const TranscriptView = ({
                         </TooltipTrigger>
                     
                     <TooltipContent side="bottom" align="end" className="space-y-3 max-w-md rounded-md border bg-primary p-4">
-                      {turnFeedback.map((item, feedbackIndex) => (
-                        <p key={item._id ?? `${turn.timestamp}-${index}-${feedbackIndex}`} className="text-sm">
-                          {item.feedback || "No feedback."}
-                        </p>
-                      ))}
+                      {turnFeedback.map((item, feedbackIndex) => {
+                        const matchingExample = item.turnRefs?.find(
+                          (ref) => ref.timestamp === turn.timestamp
+                        );
+
+                        return (
+                          <div
+                            key={item._id ?? `${turn.timestamp}-${index}-${feedbackIndex}`}
+                            className="space-y-1"
+                          >
+                            {item.criterion?.name ? (
+                              <p className="text-xs font-semibold text-primary-foreground/80">
+                                {item.criterion.name}
+                              </p>
+                            ) : null}
+                            <p className="text-sm">
+                              {matchingExample?.text || item.feedback || "No feedback."}
+                            </p>
+                          </div>
+                        );
+                      })}
                     </TooltipContent>
                   </Tooltip>
                 );

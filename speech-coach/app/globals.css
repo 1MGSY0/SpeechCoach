@@ -130,3 +130,23 @@
     @apply font-sans;
   }
 }
+
+.speechcoach-lobby-video.str-video__video-preview-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0;
+  border-block: 0 !important;
+  border-inline: 0 !important;
+  border-radius: inherit !important;
+  background: transparent !important;
+}
+
+.speechcoach-lobby-video .str-video__video-preview,
+.speechcoach-lobby-video .str-video__video-placeholder,
+.speechcoach-lobby-video video {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0;
+  border-radius: inherit !important;
+  object-fit: cover !important;
+}

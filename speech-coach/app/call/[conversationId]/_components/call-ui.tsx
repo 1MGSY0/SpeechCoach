@@ -13,11 +13,25 @@ interface Props {
   conversationName: string;
   conversationId: string;
   userId: string;
+  transcriptText?: string | null;
+  personaName?: string | null;
 };
 
-export const CallUI = ({ conversationName, conversationId, userId }: Props) => {
+export const CallUI = ({
+  conversationName,
+  conversationId,
+  userId,
+  transcriptText,
+  personaName,
+}: Props) => {
   const call = useCall();
   const [show, setShow] = useState<"lobby" | "call" | "ended">("lobby");
+  const [livePartialTranscript, setLivePartialTranscript] = useState<{
+    speaker: string;
+    text: string;
+    timestamp: string;
+    isLive: boolean;
+  } | null>(null);
 
   const endingRef = useRef(false);
 
@@ -40,16 +54,41 @@ export const CallUI = ({ conversationName, conversationId, userId }: Props) => {
   useEffect(() => {
     if (!call) return;
 
+    const handleCustomEvent = (event: { custom?: Record<string, unknown> }) => {
+      const custom = event.custom ?? {};
+
+      if (custom.type !== "speechcoach.transcript_partial") {
+        return;
+      }
+
+      const speaker = typeof custom.speaker === "string" ? custom.speaker : "User";
+      const text = typeof custom.text === "string" ? custom.text.trim() : "";
+      if (!text) return;
+
+      setLivePartialTranscript({
+        speaker,
+        text,
+        timestamp: typeof custom.timestamp === "string" ? custom.timestamp : "live",
+        isLive: custom.isFinal !== true,
+      });
+    };
+
     const handleSessionEnded = () => {
       void finalizeSession();
     };
 
-    call.on("call.session_ended", handleSessionEnded);
+    const unsubscribeCustom = call.on("custom", handleCustomEvent);
+    const unsubscribeSessionEnded = call.on("call.session_ended", handleSessionEnded);
 
     return () => {
-      call.off("call.session_ended", handleSessionEnded);
+      unsubscribeCustom();
+      unsubscribeSessionEnded();
     };
   }, [call, finalizeSession]);
+
+  useEffect(() => {
+    setLivePartialTranscript(null);
+  }, [transcriptText]);
 
   const handleJoin = async () => {
     if (!call) return;
@@ -85,7 +124,15 @@ export const CallUI = ({ conversationName, conversationId, userId }: Props) => {
   return (
     <StreamTheme className="h-full">
       {show === "lobby" && <CallLobby onJoin={handleJoin} />}
-      {show === "call" && <CallActive onLeave={handleLeave} conversationName={conversationName} />}
+      {show === "call" && (
+        <CallActive
+          onLeave={handleLeave}
+          conversationName={conversationName}
+          transcriptText={transcriptText}
+          personaName={personaName}
+          livePartialTranscript={livePartialTranscript}
+        />
+      )}
       {show === "ended" && <CallEnded />}
     </StreamTheme>
   )

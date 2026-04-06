@@ -1,6 +1,7 @@
 "use client"
 import { ResponsiveDialog } from "@/components/responsive-dialog";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { ConversationForm } from "./conversation-form";
 
@@ -23,8 +24,15 @@ export const NewConversationDialog = ({
     >
       <ConversationForm
         onSuccess={(id) => {
+          if (!id) {
+            toast.error("Conversation was created, but no conversation id was returned.");
+            router.push("/conversation");
+            router.refresh();
+            return;
+          }
+
           onOpenChange(false);
-          router.push(`/conversation/${id}`);
+          router.push(`/conversation/${encodeURIComponent(id)}`);
         }}
         onCancel={() => onOpenChange(false)}
       />

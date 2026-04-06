@@ -20,6 +20,8 @@ import { CancelledState } from "./states/cancelled-state";
 import { ProcessingState } from "./states/processing-state";
 import { CompletedState } from "./states/completed-state";
 import { extractPersonaData } from "@/components/extract-persona";
+import { useReEvaluateConversation } from "./use-re-evaluate-conversation";
+import { exportConversationReportAsPdf } from "./export-conversation-report";
 
 interface Props {
   preloadedConversation: Preloaded<typeof api.Conversations.GetConversationDetails>;
@@ -34,6 +36,10 @@ export const ConversationIdView = ({ preloadedConversation, preloadedGrading }: 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
+  const [nameDialogOpen, setNameDialogOpen] = useState(false);
+  const { handleReEvaluate, isSubmitting: isReEvaluating } = useReEvaluateConversation(
+    conversation?._id ?? ""
+  );
 
   const removeConversation = useMutation(api.Conversations.RemoveConversation);
 
@@ -82,6 +88,67 @@ export const ConversationIdView = ({ preloadedConversation, preloadedGrading }: 
   const isCancelled = conversation.status === "cancelled";
   const isCompleted = conversation.status === "completed";
   const isProcessing = conversation.status === "processing";
+  const sanitizedGrading = grading
+    ? {
+        overallScore: grading.overallScore,
+        summary: grading.summary,
+        recommendations: grading.recommendations,
+        framework: grading.framework
+          ? {
+              name: grading.framework.name,
+              description: grading.framework.description,
+            }
+          : null,
+        results: (grading.results ?? []).map((result) => ({
+          _id: result._id,
+          score: result.score,
+          maxScore: result.maxScore,
+          count: result.count,
+          feedback: result.feedback,
+          evidence: result.evidence,
+          turnRefs: Array.isArray(result.turnRefs)
+            ? result.turnRefs.filter(
+                (
+                  ref
+                ): ref is {
+                  text: string;
+                  timestamp: string;
+                } =>
+                  typeof ref === "object" &&
+                  ref !== null &&
+                  typeof ref.text === "string" &&
+                  typeof ref.timestamp === "string"
+              )
+            : [],
+          category: result.category
+            ? {
+                _id: result.category._id,
+                name: result.category.name,
+              }
+            : null,
+          criterion: result.criterion
+            ? {
+                _id: result.criterion._id,
+                name: result.criterion.name,
+              }
+            : null,
+        })),
+      }
+    : null;
+  const primaryActionLabel = isProcessing
+    ? "Re-evaluating"
+    : isCompleted
+      ? "Re-evaluate"
+      : "Edit";
+  const primaryActionIcon = isCompleted || isProcessing ? "re-evaluate" : "edit";
+  const primaryActionDisabled = isProcessing || isReEvaluating;
+  const handlePrimaryAction = isCompleted ? handleReEvaluate : () => setUpdateDialogOpen(true);
+  const semanticMemoryEnabled =
+    (conversation as { semanticMemoryEnabled?: boolean | null })
+      .semanticMemoryEnabled !== false;
+  const reportSummary = semanticMemoryEnabled
+    ? conversation.summary || sanitizedGrading?.summary
+    : sanitizedGrading?.summary || conversation.summary;
 
   return (
     <div className="flex-1 py-4 px-4 md:px-8 flex flex-col gap-y-4">
@@ -89,6 +156,12 @@ export const ConversationIdView = ({ preloadedConversation, preloadedGrading }: 
         open={updateDialogOpen}
         onOpenChange={setUpdateDialogOpen}
         initialValues={conversation}
+      />
+      <UpdateConversationDialog
+        open={nameDialogOpen}
+        onOpenChange={setNameDialogOpen}
+        initialValues={conversation}
+        nameOnly
       />
       <RemoveConfirmation
         open={isDeleteOpen}
@@ -99,7 +172,25 @@ export const ConversationIdView = ({ preloadedConversation, preloadedGrading }: 
       <ConversationIdViewHeader
         conversationId={conversation._id}
         conversationName={conversation.name}
-        onEdit={() => setUpdateDialogOpen(true)}
+        onPrimaryAction={handlePrimaryAction}
+        primaryActionLabel={primaryActionLabel}
+        primaryActionIcon={primaryActionIcon}
+        primaryActionDisabled={primaryActionDisabled}
+        onEditName={
+          isCompleted || isProcessing ? () => setNameDialogOpen(true) : undefined
+        }
+        onDownloadPdf={
+          isCompleted
+            ? () =>
+                exportConversationReportAsPdf({
+                  conversationName: conversation.name,
+                  summary: reportSummary,
+                  transcript: conversation.transcriptText,
+                  gradingData: sanitizedGrading,
+                })
+            : undefined
+        }
+        canDownloadPdf={isCompleted}
         onRemove={handleRemove}
       />
 
@@ -135,10 +226,19 @@ export const ConversationIdView = ({ preloadedConversation, preloadedGrading }: 
       </div>
 
       {isCancelled && <CancelledState />}
-      {isProcessing && <ProcessingState />}
-      {isCompleted && <CompletedState data={conversation} gradingData={grading}/>}
+      {isProcessing && <ProcessingState conversationId={conversation._id} />}
+      {isCompleted && <CompletedState data={conversation} gradingData={sanitizedGrading}/>}
       {isActive && <ActiveState conversationId={conversation._id} />}
-      {isUpcoming && <UpcomingState conversationId={conversation._id}/>}
+      {isUpcoming && (
+        <UpcomingState
+          conversationId={conversation._id}
+          userId={conversation.userId}
+          semanticMemoryEnabled={
+            (conversation as { semanticMemoryEnabled?: boolean | null })
+              .semanticMemoryEnabled
+          }
+        />
+      )}
     </div>
   );
 };

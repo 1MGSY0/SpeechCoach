@@ -26,7 +26,6 @@ return (
     <div>
             <div className='flex justify-between items-center mb-10'>
                     <div>       
-                            <h2 className='font-medium text-gray-500'>Dashboard</h2>
                             <h2 className='text-3xl font-bold text-primary'>Hi, {user?.displayName}!</h2>  
                     </div>
             </div>

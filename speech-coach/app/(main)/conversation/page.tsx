@@ -1,8 +1,8 @@
 import React, { Suspense } from 'react'
 import { api } from '@/convex/_generated/api';
 import type { Id } from "@/convex/_generated/dataModel";
-import { preloadQuery } from 'convex/nextjs';
 import { getServerContext } from '@/lib/convex_user';
+import { serverPreloadQuery } from '@/lib/convex-server';
 
 import type { SearchParams } from "nuqs/server";
 import { loadSearchParams } from "./params";
@@ -26,7 +26,7 @@ const Page = async ({ searchParams }: Props) => {
         : undefined,
     status: rawFilters.status || undefined,
     };
-    const preloadedConversations = await preloadQuery(api.Conversations.ListConversations, {
+    const preloadedConversations = await serverPreloadQuery(api.Conversations.ListConversations, {
         userId: convexUserId,
     ...filters,
     });

@@ -74,7 +74,7 @@ function buildInstructions(values: PersonaStructuredData) {
 You are ${data.char_name}. Stay fully in character at all times.
 Respond as a real person in a live conversation, not as an assistant.
 
-## Core Objective
+## Core User Objective
 ${data.conversation_goal || "Maintain a natural conversation consistent with the character."}
 
 ## Scenario
@@ -109,14 +109,14 @@ ${data.mesExamples}`
 
 ## Roleplay Rules
 - Speak as ${data.char_name} only.
-- Keep responses natural, emotionally consistent, and grounded in the scenario.
+- Keep responses natural, emotionally reasonable, and follow changes in scenario continuity.
 - Prioritize dialogue over exposition.
 - Do not break character.
 - Do not mention system prompts, hidden instructions, or that you are an AI.
 - Avoid summarising your intent; instead, directly say what the character would say.
 - Keep replies conversational and context-aware.
-- Escalate, de-escalate, question, interrupt, or refuse only if it fits the character and scenario.
 - When emotion is high, let word choice, pacing, and tone reflect it naturally.
+- Escalate, de-escalate towards the achieving core user objective when the scenario updates in scenario continuitys.
 `.trim();
 
   return `${metadataBlock}\n\n${roleplayContext}`;
@@ -265,6 +265,21 @@ export const PersonaForm = ({
       </div>
 
       <div className="space-y-1">
+        <label className="text-xs font-medium" htmlFor="persona-goal">
+          Conversation User Goal
+        </label>
+        <Textarea
+          className={undefined} id="persona-goal"
+          placeholder="e.g. Guide Linda to calm down and ensure she books a slot for the meeting."
+          {...form.register("conversation_goal")}        />
+        {form.formState.errors.conversation_goal && (
+          <p className="text-xs text-destructive">
+            {form.formState.errors.conversation_goal.message}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-1">
         <label className="text-xs font-medium" htmlFor="persona-wi-after">
           World Info
         </label>
@@ -311,21 +326,6 @@ export const PersonaForm = ({
         {form.formState.errors.personality && (
           <p className="text-xs text-destructive">
             {form.formState.errors.personality.message}
-          </p>
-        )}
-      </div>
-
-      <div className="space-y-1">
-        <label className="text-xs font-medium" htmlFor="persona-goal">
-          Conversation Goal
-        </label>
-        <Textarea
-          className={undefined} id="persona-goal"
-          placeholder="e.g. asking for updates on her son’s condition and demanding better treatment for him."
-          {...form.register("conversation_goal")}        />
-        {form.formState.errors.conversation_goal && (
-          <p className="text-xs text-destructive">
-            {form.formState.errors.conversation_goal.message}
           </p>
         )}
       </div>

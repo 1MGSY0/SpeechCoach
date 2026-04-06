@@ -118,7 +118,7 @@ export const PersonaIdView = ({ preloadedPersona }: Props) => {
 
                                 <Section title="Scenario" content={data.scenario} />
 
-                                <Section title="Goal" content={data.conversation_goal} />
+                                <Section title="User Goal" content={data.conversation_goal} />
 
                                 <Section title="Description" content={data.description} />
 

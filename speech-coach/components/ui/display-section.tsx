@@ -8,7 +8,7 @@ export const Section = ({
   if (!content) return null;
 
   return (
-    <div className="border rounded-lg p-3 bg-muted/10">
+    <div className="border rounded-lg p-3 bg-muted/5">
       <p className="text-lg font-semibold text-muted-foreground mb-1">
         {title}
       </p>

@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from '@/convex/_generated/api';
-import {usePreloadedQuery, type Preloaded } from "convex/react";
+import {usePreloadedQuery, useQuery, type Preloaded } from "convex/react";
 import { CallProvider } from './call-provider';
 import { CallEnded } from './call-ended';
 
@@ -15,7 +15,14 @@ interface Props {
 export const CallView = ({
   preloadedConversation
 }: Props) => {
-const conversation = usePreloadedQuery(preloadedConversation);
+  const initialConversation = usePreloadedQuery(preloadedConversation);
+  const liveConversation = useQuery(
+    api.Conversations.GetConversationById,
+    initialConversation?._id
+      ? { conversationId: initialConversation._id }
+      : "skip"
+  );
+  const conversation = liveConversation ?? initialConversation;
 
   if (!conversation) {
     return (
@@ -38,6 +45,8 @@ const conversation = usePreloadedQuery(preloadedConversation);
     <CallProvider
       conversationId={conversation._id}
       conversationName={conversation.name}
+      transcriptText={conversation.transcriptText}
+      personaName={conversation.personaName}
     />
   );
 };

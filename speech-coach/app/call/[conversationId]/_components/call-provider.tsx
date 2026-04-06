@@ -11,9 +11,16 @@ import { CallConnect } from "./call-connect";
 interface Props {
   conversationId: string;
   conversationName: string;
+  transcriptText?: string | null;
+  personaName?: string | null;
 }
 
-export const CallProvider = ({ conversationId, conversationName }: Props) => {
+export const CallProvider = ({
+  conversationId,
+  conversationName,
+  transcriptText,
+  personaName,
+}: Props) => {
   const { user, userData } = useContext(UserContext) ?? {};
 
   if (!userData?._id) {
@@ -28,6 +35,8 @@ export const CallProvider = ({ conversationId, conversationName }: Props) => {
     <CallConnect
       conversationId={conversationId}
       conversationName={conversationName}
+      transcriptText={transcriptText}
+      personaName={personaName}
       userId={userData._id}
       userName={userData.name}
       userImage={

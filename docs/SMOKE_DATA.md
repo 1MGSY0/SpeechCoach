@@ -47,3 +47,22 @@ Outputs:
 Point batch runner to the directory of generated files, or copy select WAVs into `data/audio/` if required by your scripts.
 
 Consider tagging the scenario with a profile (e.g., `configs/stories/permit_appeal.yaml`) for consistency with your use case.
+
+## Export Markdown tables for FYP
+
+After generating a benchmark log and continuity CSV, export thesis-friendly tables to Markdown:
+
+```powershell
+python -m src.eval.export_fyp_tables `
+  --manifest data/smoke_audio/manifest.jsonl `
+  --latency_log logs/session_batch_llama.jsonl `
+  --continuity_csv logs/eval_reports/continuity_scores_llama.csv `
+  --variant batch_llama `
+  --out_md logs/eval_reports/fyp_tables_batch_llama.md
+```
+
+The generated Markdown file includes:
+- smoke dataset inventory
+- summary table for latency and continuity metrics
+- turn-level evaluation table
+- text appendix with reference, ASR, and reply excerpts

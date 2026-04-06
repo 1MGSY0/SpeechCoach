@@ -1,7 +1,7 @@
 import { api } from '@/convex/_generated/api';
 import { getServerContext } from '@/lib/convex_user';
 import type { Id } from "@/convex/_generated/dataModel";
-import { preloadQuery } from 'convex/nextjs';
+import { serverPreloadQuery } from '@/lib/convex-server';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { LoadingState } from '@/components/loading-state';
@@ -21,7 +21,7 @@ export default async function Page({ params }: Props) {
       }
     const conversationConvexId = conversationId as Id<"Conversations">;
 
-    const preloadedConversation = await preloadQuery(api.Conversations.GetConversationDetails, {
+    const preloadedConversation = await serverPreloadQuery(api.Conversations.GetConversationDetails, {
         userId: convexUserId,
         conversationId: conversationConvexId,
     });

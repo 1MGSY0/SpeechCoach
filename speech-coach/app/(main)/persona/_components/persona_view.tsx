@@ -22,7 +22,8 @@ export default function PersonaView ({ preloadedPersonas }) {
         <DataTable 
           onRowClick={(row) => router.push(`/persona/${row._id}`)}
           data={personas} 
-          columns={columns}/>
+          columns={columns}
+          variant="cards"/>
         <DataPagination 
           page={filters.page}
           totalPages={totalPages}

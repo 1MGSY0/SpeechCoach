@@ -22,6 +22,8 @@ interface Props {
   userId: Id<"User">;
   userName: string;
   userImage: string;
+  transcriptText?: string | null;
+  personaName?: string | null;
 };
 
 export const CallConnect = ({
@@ -30,6 +32,8 @@ export const CallConnect = ({
   userId,
   userName,
   userImage,
+  transcriptText,
+  personaName,
 }: Props) => {
   const generateToken = useAction(api.conversations_stream.generateToken);
 
@@ -90,6 +94,8 @@ export const CallConnect = ({
           conversationName={conversationName}
           conversationId={conversationId}
           userId={userId}
+          transcriptText={transcriptText}
+          personaName={personaName}
         />
       </StreamCall>
     </StreamVideo>

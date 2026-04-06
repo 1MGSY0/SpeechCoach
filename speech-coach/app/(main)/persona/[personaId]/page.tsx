@@ -1,7 +1,7 @@
-import { preloadQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { getServerContext } from "@/lib/convex_user";
+import { serverPreloadQuery } from "@/lib/convex-server";
 
 import { Suspense } from "react";
 import { LoadingState } from "@/components/loading-state";
@@ -23,7 +23,7 @@ export default async function Page({ params }: Props) {
     const { convexUserId } = await getServerContext();
     const personaConvexId = personaId as Id<"Persona">;
 
-    const preloadedPersona = await preloadQuery(api.Persona.GetPersonaDetails, {
+    const preloadedPersona = await serverPreloadQuery(api.Persona.GetPersonaDetails, {
         userId: convexUserId,
         personaId: personaConvexId,
     });

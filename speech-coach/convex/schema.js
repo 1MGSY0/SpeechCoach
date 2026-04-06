@@ -2,6 +2,12 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { CONVERSATION_STATUSES } from "../services/conversation-status";
 
+const turnRefValidator = v.object({
+    text: v.string(),
+    timestamp: v.string(),
+});
+const turnRefValueValidator = v.union(v.number(), turnRefValidator);
+
 export default defineSchema({
     User: defineTable({
         name: v.string(),
@@ -20,12 +26,21 @@ export default defineSchema({
         userId: v.id("User"),
         personaId: v.id("Persona"),
         rubricId: v.optional(v.id("AssessmentFramework")),
+        modelPipeline: v.optional(v.union(v.literal("gemini_realtime"), v.literal("gemini_cascade"))),
+        voiceGender: v.optional(v.union(v.literal("female"), v.literal("male"))),
+        voiceName: v.optional(v.string()),
+        semanticMemoryEnabled: v.optional(v.boolean()),
         status: v.union(...CONVERSATION_STATUSES.map((status) => v.literal(status))),
+        processingProgress: v.optional(v.number()),
+        processingStepTitle: v.optional(v.string()),
+        processingError: v.optional(v.union(v.string(), v.null())),
         startedAt: v.optional(v.string()),
         endedAt: v.optional(v.string()),
         transcriptText: v.optional(v.string()),
         recordingUrl: v.optional(v.string()),
         summary: v.optional(v.string()),
+        speechMetrics: v.optional(v.any()),
+        memoryMetrics: v.optional(v.any()),
         updatedAt: v.optional(v.string()),
     })
         .index("by_personaId", ["personaId"])
@@ -98,7 +113,7 @@ export default defineSchema({
         maxScore: v.optional(v.number()),
         feedback: v.optional(v.string()),
         evidence: v.optional(v.array(v.string())),
-        turnRefs: v.optional(v.array(v.number())),
+        turnRefs: v.optional(v.array(turnRefValueValidator)),
     })
         .index("by_assessmentId", ["assessmentId"])
         .index("by_criterionId", ["criterionId"])

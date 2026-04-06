@@ -4,7 +4,7 @@ import React from "react";
 import { useFieldArray, type UseFormReturn, Controller } from "react-hook-form";
 
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/collapsible";
 
 import type { RubricFormValues } from "./rubric-form";
+import { cn } from "@/lib/utils";
 
 interface RubricCategoryCardProps {
   form: UseFormReturn<RubricFormValues>;
@@ -204,11 +205,14 @@ export const RubricCategoryCard = ({
                     </CollapsibleContent>
                     
                     <div className="flex flex-row items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" className="underline" type="button">
-                            <CollapsibleTrigger>
-                                Advanced settings
-                            </CollapsibleTrigger>
-                        </Button>
+                        <CollapsibleTrigger
+                            className={cn(
+                                buttonVariants({ variant: "ghost", size: "sm" }),
+                                "underline"
+                            )}
+                        >
+                            Advanced settings
+                        </CollapsibleTrigger>
                         
                         <Button
                             type="button"

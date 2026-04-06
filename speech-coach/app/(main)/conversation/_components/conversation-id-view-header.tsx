@@ -2,6 +2,8 @@ import {
   ChevronRightIcon,
   TrashIcon,
   PencilIcon,
+  RefreshCcwIcon,
+  FileDownIcon,
   MoreVerticalIcon,
 } from "lucide-react";
 
@@ -24,16 +26,31 @@ import {
 interface Props {
   conversationId: string;
   conversationName: string;
-  onEdit: () => void;
+  onPrimaryAction: () => void;
+  primaryActionLabel?: string;
+  primaryActionIcon?: "edit" | "re-evaluate";
+  primaryActionDisabled?: boolean;
+  onEditName?: () => void;
+  onDownloadPdf?: () => void;
+  canDownloadPdf?: boolean;
   onRemove: () => void;
 }
 
 export const ConversationIdViewHeader = ({
   conversationId,
   conversationName,
-  onEdit,
+  onPrimaryAction,
+  primaryActionLabel = "Edit",
+  primaryActionIcon = "edit",
+  primaryActionDisabled = false,
+  onEditName,
+  onDownloadPdf,
+  canDownloadPdf = false,
   onRemove,
 }: Props) => {
+  const PrimaryActionIcon =
+    primaryActionIcon === "re-evaluate" ? RefreshCcwIcon : PencilIcon;
+
   return (
     <div className="flex items-center justify-between">
       <Breadcrumb className={undefined}>
@@ -69,10 +86,27 @@ export const ConversationIdViewHeader = ({
           <MoreVerticalIcon />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className={undefined}>
-          <DropdownMenuItem onClick={onEdit} className={undefined} inset={undefined}>
-            <PencilIcon className="size-4 text-black" />
-            Edit
+          <DropdownMenuItem
+            onClick={onPrimaryAction}
+            disabled={primaryActionDisabled}
+            className={undefined}
+            inset={undefined}
+          >
+            <PrimaryActionIcon className="size-4 text-black" />
+            {primaryActionLabel}
           </DropdownMenuItem>
+          {onEditName ? (
+            <DropdownMenuItem onClick={onEditName} className={undefined} inset={undefined}>
+              <PencilIcon className="size-4 text-black" />
+              Edit name
+            </DropdownMenuItem>
+          ) : null}
+          {canDownloadPdf && onDownloadPdf ? (
+            <DropdownMenuItem onClick={onDownloadPdf} className={undefined} inset={undefined}>
+              <FileDownIcon className="size-4 text-black" />
+              Download PDF
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem onClick={onRemove} className={undefined} inset={undefined}>
             <TrashIcon className="size-4 text-black" />
             Delete

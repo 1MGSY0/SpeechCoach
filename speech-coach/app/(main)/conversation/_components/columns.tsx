@@ -1,6 +1,6 @@
 "use client";
 
-import {format, roundToNearestHours} from "date-fns";
+import {format} from "date-fns";
 import humanizeDuration from "humanize-duration";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -43,63 +43,57 @@ const statusColorMap = {
 }
 export const columns: ColumnDef<ConversationGetMany["items"][number]>[] = [
   {
-    accessorKey: "name",
-    header: "Conversation",
-    cell: ({ row }) => (
-      <div className="flex flex-col gap-y-1">
-        <span className='text-lg font-semibold capitalize'>{row.original.name}</span>
-        <div className="flex items-center gap-x-2">
-          <div className="flex items-center gap-x-1">
-            <CornerDownRightIcon className="size-3 text-muted-foreground" />
-            <GeneratedAvatar
-            variant="botttsNeutral"
-            seed={row.original.personaName}
-            className="size-5"
-            />
-          </div>
-            <span className="text-sm font-bold text-muted-foreground max-w-[200px] truncate capitalize">
-              {row.original.personaName}
-            </span>
-        </div>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
+    id: "conversationCard",
+    header: "",
     cell: ({ row }) => {
       const status = row.original.status as keyof typeof statusIconMap;
       const StatusIcon = statusIconMap[status];
-      
-      return (
-        <Badge 
-            variant="outline" 
-            className={cn(
-              "rounded-md capitalize [&>svg]:size-4 text-muted-foreground", 
-              statusColorMap[status])}>
-            <StatusIcon className={cn("size-3", status === "processing" && "animate-spin")}/>
-            <p className="pl-2">{row.original.status}</p>
-        </Badge>
-      );
-    },
-  },
-  { 
-    accessorKey: "duration",
-    header: "Duration",
-    cell: ({ row }) => {
-      return (
-        <div className="flex flex-col gap-y-1">
-          <span className="text-xs text-muted-foreground ">
-            {row.original.startedAt ? format(row.original.startedAt, "MMM d") : "-"}
-          </span>
-          <Badge 
-            variant="outline" 
-            className="inline-flex w-fit border-0 rounded-md capitalize [&>svg]:size-4 flex items-center gap-x-2">
-            <ClockIcon className="size-4 text-muted-foreground" />
-            {row.original.durationSeconds != null ? formatDuration(row.original.durationSeconds) : "No duration"}
-          </Badge>
-        </div>
 
+      return (
+        <div className="w-full whitespace-normal rounded-2xl border bg-card p-4 shadow-sm">
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1.5fr)_auto_auto] md:items-center">
+            <div className="min-w-0 flex flex-col gap-y-1">
+              <span className="text-lg font-semibold capitalize">{row.original.name}</span>
+              <div className="flex items-center gap-x-2">
+                <div className="flex items-center gap-x-1">
+                  <CornerDownRightIcon className="size-3 text-muted-foreground" />
+                  <GeneratedAvatar
+                    variant="botttsNeutral"
+                    seed={row.original.personaName}
+                    className="size-5"
+                  />
+                </div>
+                <span className="text-sm font-bold text-muted-foreground max-w-[200px] truncate capitalize">
+                  {row.original.personaName}
+                </span>
+              </div>
+            </div>
+            <div className="md:justify-self-start">
+              <Badge
+                variant="outline"
+                className={cn(
+                  "rounded-md capitalize [&>svg]:size-4 text-muted-foreground",
+                  statusColorMap[status]
+                )}
+              >
+                <StatusIcon className={cn("size-3", status === "processing" && "animate-spin")} />
+                <p className="pl-2">{row.original.status}</p>
+              </Badge>
+            </div>
+            <div className="flex flex-col gap-y-1 md:min-w-[140px]">
+              <span className="text-xs text-muted-foreground">
+                {row.original.startedAt ? format(row.original.startedAt, "MMM d") : "-"}
+              </span>
+              <Badge
+                variant="outline"
+                className="inline-flex w-fit border-0 rounded-md capitalize [&>svg]:size-4 flex items-center gap-x-2"
+              >
+                <ClockIcon className="size-4 text-muted-foreground" />
+                {row.original.durationSeconds != null ? formatDuration(row.original.durationSeconds) : "No duration"}
+              </Badge>
+            </div>
+          </div>
+        </div>
       );
     },
   },

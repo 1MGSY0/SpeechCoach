@@ -43,11 +43,13 @@ function CommandDialog({
   return (
     <Dialog modal {...props}>
       <DialogHeader className="sr-only">
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
+        <DialogTitle className={undefined}>{title}</DialogTitle>
+        <DialogDescription className={undefined}>{description}</DialogDescription>
       </DialogHeader>
       <DialogContent
         className={cn("top-1/3 translate-y-0 overflow-hidden rounded-none p-0", className)}
+        overlayClassName={undefined}
+        closeButtonClassName={undefined}
         showCloseButton={showCloseButton}>
         {children}
       </DialogContent>
@@ -70,10 +72,14 @@ function CommandResponsiveDialog({
   return (
     <Dialog {...props}>
       <DialogHeader className="sr-only">
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
+        <DialogTitle className={undefined}>{title}</DialogTitle>
+        <DialogDescription className={undefined}>{description}</DialogDescription>
       </DialogHeader>
-      <DialogContent className="overflow-hidden p-0">
+      <DialogContent
+        className="overflow-hidden p-0"
+        overlayClassName={undefined}
+        closeButtonClassName={undefined}
+      >
         <Command shouldFilter={shouldFilter} className="[&_[cmdk-group-heading]]:text-muted-foreground **:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
           {children}
         </Command>
@@ -97,7 +103,7 @@ function CommandInput({
             className
           )}
           {...props} />
-        <InputGroupAddon>
+        <InputGroupAddon className={undefined}>
           <MagnifyingGlassIcon className="size-4 shrink-0 opacity-50" />
         </InputGroupAddon>
       </InputGroup>
@@ -113,7 +119,7 @@ function CommandList({
     <CommandPrimitive.List
       data-slot="command-list"
       className={cn(
-        "no-scrollbar max-h-72 scroll-py-0 overflow-x-hidden overflow-y-auto outline-none",
+        "max-h-72 scroll-py-0 overflow-x-hidden overflow-y-auto outline-none",
         className
       )}
       {...props} />
