@@ -1,113 +1,230 @@
 # SpeechCoach
-Real-time speech-to-speech coaching agent (Windows + RTX laptop target).
 
-## Docker Pipeline
+SpeechCoach is a full-stack practice and feedback platform for conversations, built with:
 
-For the full local web app + Convex + vision agent + Inngest stack, use the Docker guide:
+- Next.js web app (`speech-coach`)
+- Convex backend + dashboard
+- Inngest dev server
+- Python vision agent (`backend-vision-agent`)
+- Docker Compose (dev and production-style)
 
-- [`docs/docker-pipeline.md`](/c:/Users/gushi/LTU/SpeechCoach/docs/docker-pipeline.md)
+---
 
-For a production-style Docker run that avoids `next dev` compile-on-first-request behavior, use:
+## Contents
+
+- [Directory Structure](#directory-structure)
+- [Quick Start (Docker)](#quick-start-docker)
+- [Environment Files (Complete Reference)](#environment-files-complete-reference)
+  - [A) Repo root env files](#a-repo-root-env-files)
+  - [B) Web app env files (`speech-coach`)](#b-web-app-env-files-speech-coach)
+  - [C) Vision agent env files (`backend-vision-agent`)](#c-vision-agent-env-files-backend-vision-agent)
+- [URL Rules](#url-rules)
+- [References](#references)
+
+---
+
+## Directory Structure
+
+```text
+SpeechCoach/
+├─ README.md
+├─ .env.docker
+├─ docker-compose.yml
+├─ docker-compose.prod.yml
+├─ docs/
+│  └─ docker-pipeline.md
+├─ scripts/
+│  ├─ docker-up.ps1
+│  └─ docker-down.ps1
+├─ speech-coach/
+│  ├─ Dockerfile
+│  ├─ .env
+│  ├─ .env.local
+│  └─ .env.docker
+└─ backend-vision-agent/
+   ├─ Dockerfile
+   ├─ .env
+   └─ .env.docker
+```
+---
+
+## Quick Start (Docker)
+
+From repo root:
 
 ```powershell
-docker compose -f docker-compose.prod.yml --env-file .env.docker up --build -d
+powershell -ExecutionPolicy Bypass -File .\scripts\docker-up.ps1
 ```
 
-## Quickstart
+Stop:
 
-1) Create and activate a virtual environment (PowerShell):
-
-```
-python -m venv .venv
-. .\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip setuptools wheel
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\docker-down.ps1
 ```
 
-2) Install dependencies:
+---
 
-```
-python -m pip install -r requirements.txt
-```
+## Quick Start Local
 
-3) GPU sanity check:
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
-```
-python -m src.apps.check_cuda
-```
+### main webpage
 
-4) Run a single offline turn (ASR -> LLM -> TTS):
-
-```
-python -m src.apps.run_offline --in_wav data/audio/sample.wav
+```bash
+npm run dev
 ```
 
-5) Batch benchmark and generate a report:
+### database
 
-```
-# run batch over data/audio/*.wav and log timings
-python -m src.apps.run_batch --in_dir data/audio --llm_cfg configs/llm_llamacpp.yaml --tts_cfg configs/tts_lowlat.yaml
-
-# compute continuity (BERTScore; BLEURT optional)
-python -m src.eval.score_report --log logs/session_batch.jsonl --out_csv logs/eval_reports/continuity_scores.csv
-
-# summarize latency means
-python -m src.eval.latency_benchmark --log logs/session_batch.jsonl
-
-# assemble one-pager report
-python -m src.eval.make_report --latency_log logs/session_batch.jsonl --continuity_csv logs/eval_reports/continuity_scores.csv --llm_cfg configs/llm_llamacpp.yaml
+```bash
+docker compose up
+npx convex dev
 ```
 
-6) Optional story context:
+### Backend
 
-```
-python -m src.apps.run_batch --in_dir data/audio --story_cfg configs/stories/permit_appeal.yaml
-```
-
-7) Prepare benchmark audio (datasets and/or synthetic):
-
-```
-# Download small subsets and normalize to 16 kHz mono in data/audio
-python -m src.apps.prepare_benchmark_data --dataset all --n 8 --synthesize
-
-# Only LibriSpeech test-clean samples
-python -m src.apps.prepare_benchmark_data --dataset librispeech --n 10
-
-# Only Common Voice (best effort depending on torchaudio API)
-python -m src.apps.prepare_benchmark_data --dataset commonvoice --n 10
+```bash
+uv run main.py serve --host 0.0.0.0 --port 8000
 ```
 
-## New: Choosable benchmark pipeline
+### inngest
 
-Use the unified benchmark CLI to run either turn-based or streaming variants and export a CSV summary.
-
-```
-# Turn-based (sequential ASR -> LLM -> TTS)
-python -m src.apps.run_benchmark --variant turn_based --in_dir data/audio --latency_csv logs/latency_turn_based.csv
-
-# Streaming cascaded (ASR partials -> LLM token stream -> clause TTS)
-python -m src.apps.run_benchmark --variant streaming --in_dir data/audio --chunk_ms 20 --realtime --latency_csv logs/latency_streaming.csv
+```bash
+npx inngest-cli@latest dev
 ```
 
-Notes:
-- Streaming run logs session-level TTFB: first ASR partial, first LLM token, first audio.
-- CSV includes per-turn latencies; TTFB rows are appended at the end.
+Main URLs:
 
-## Streaming & Orchestration (experimental)
-- Minimal streaming ASR wrapper: `src/asr/faster_whisper_stream.py` (buffers audio, emits text deltas).
-- Token streaming for Llama.cpp: `generate_stream()` in `src/llm/llama_cpp_impl.py`.
-- Clause-based TTS: `synth_clauses_to_file()` in `src/tts/coqui_impl.py`.
-- Async pipeline scaffold: `src/pipeline/orchestrator.py` (ASR partials -> LLM tokens -> TTS clauses).
+- Web: `http://localhost:3000`
+- Convex API: `http://localhost:3210`
+- Convex Dashboard: `http://localhost:6791`
+- Inngest: `http://localhost:8288`
+- Vision Agent: `http://localhost:8000`
 
-## Reports
-- Template: `reports/TEMPLATE_report.md`
-- Generated to: `logs/eval_reports/report.md`
+---
 
-## Citation
+## Environment Files (Complete Reference)
 
-@misc{yamagishi2019vctk,
-  author={Yamagishi, Junichi and Veaux, Christophe and MacDonald, Kirsten},
-  title={{CSTR VCTK Corpus}: English Multi-speaker Corpus for {CSTR} Voice Cloning Toolkit (version 0.92)},
-  publisher={University of Edinburgh. The Centre for Speech Technology Research (CSTR)},
-  year=2019,
-  doi={10.7488/ds/2645},
-}
+> Use Docker env files for Docker runs, and local env files for non-Docker local runs.
+
+---
+
+### A) Repo root env files
+
+#### `.\.env.docker` (Docker)
+
+| Variable | Type | Required | Example / Expected |
+|---|---|---|---|
+| `INNGEST_APP_URL` | URL string | Yes | `http://web:3000/api/inngest` |
+| `INSTANCE_SECRET` | Secret string | Yes | stable random string (do not rotate frequently) |
+
+#### `.\.env.local` (optional local root file)
+
+| Variable | Type | Required | Example / Expected |
+|---|---|---|---|
+| `INNGEST_APP_URL` | URL string | Optional | `http://localhost:3000/api/inngest` |
+| `INSTANCE_SECRET` | Secret string | Optional | stable random string |
+
+---
+
+### B) Web app env files (`speech-coach`)
+
+#### `.\speech-coach\.env` (base project env)
+
+| Variable | Type | Required | Notes |
+|---|---|---|---|
+| `NEXT_PUBLIC_STACK_PROJECT_ID` | UUID string | Yes | Stack Auth project id |
+| `NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY` | Public key string | Yes | client-side Stack key |
+| `STACK_SECRET_SERVER_KEY` | Secret key string | Yes | server-only Stack key |
+| `NEXT_PUBLIC_STREAM_VIDEO_API_KEY` | Public key string | Yes | Stream public key |
+| `STREAM_VIDEO_SECRET_KEY` | Secret key string | Yes | Stream server key |
+
+#### `.\speech-coach\.env.local` (local non-Docker dev)
+
+| Variable | Type | Required | Local Example / Expected |
+|---|---|---|---|
+| `NEXT_PUBLIC_STACK_PROJECT_ID` | UUID string | Yes | from Stack |
+| `NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY` | Public key string | Yes | from Stack |
+| `STACK_SECRET_SERVER_KEY` | Secret key string | Yes | from Stack |
+| `CONVEX_SELF_HOSTED_URL` | URL string | If self-hosted Convex | `http://127.0.0.1:3210` |
+| `CONVEX_SELF_HOSTED_ADMIN_KEY` | Secret string | If self-hosted Convex | self-hosted admin key |
+| `NEXT_PUBLIC_CONVEX_URL` | URL string | Yes | `http://127.0.0.1:3210` (or localhost) |
+| `NEXT_PUBLIC_CONVEX_SITE_URL` | URL string | Yes | `http://127.0.0.1:3211` |
+| `VOICE_AGENT_URL` | URL string | Yes | `http://localhost:8000` |
+| `VOICE_PIPELINE_TOKEN` | Secret string | Yes | must match vision agent |
+| `NEXT_PUBLIC_STREAM_VIDEO_API_KEY` | Public key string | Yes | Stream public key |
+| `STREAM_VIDEO_SECRET_KEY` | Secret key string | Yes | Stream server key |
+| `OPENROUTER_API_KEY` | Secret key string | Optional/feature-based | for OpenRouter integrations |
+| `GROQ_API_KEY` | Secret key string | Optional/feature-based | for Groq integrations |
+| `INNGEST_DEV` | Boolean-like (`0/1`) | Usually yes in local | `1` |
+
+#### `.\speech-coach\.env.docker` (Docker web container)
+
+| Variable | Type | Required | Docker Value / Expected |
+|---|---|---|---|
+| `NEXT_PUBLIC_CONVEX_URL` | Public URL string | Yes | `http://localhost:3210` |
+| `CONVEX_URL_INTERNAL` | Internal URL string | Yes | `http://backend:3210` |
+| `VOICE_AGENT_URL` | Internal URL string | Yes | `http://vision-agent:8000` |
+| `VOICE_PIPELINE_TOKEN` | Secret string | Yes | must match vision-agent token |
+| `INNGEST_DEV` | Boolean-like (`0/1`) | Yes | `1` |
+| `INNGEST_BASE_URL` | Internal URL string | Yes | `http://inngest:8288` |
+| `NEXT_PUBLIC_STACK_PROJECT_ID` | UUID string | Yes | Stack Auth project id |
+| `NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY` | Public key string | Yes | Stack public key |
+| `STACK_SECRET_SERVER_KEY` | Secret key string | Yes | Stack server key |
+| `NEXT_PUBLIC_STREAM_VIDEO_API_KEY` | Public key string | Yes | Stream public key |
+| `STREAM_VIDEO_SECRET_KEY` | Secret key string | Yes | Stream server key |
+| `GROQ_API_KEY` | Secret key string | Optional/feature-based | for Groq integrations |
+
+---
+
+### C) Vision agent env files (`backend-vision-agent`)
+
+#### `.\backend-vision-agent\.env` (local/base)
+
+| Variable | Type | Required | Local Example / Expected |
+|---|---|---|---|
+| `STREAM_API_KEY` | Public/API key string | Yes | Stream API key |
+| `STREAM_API_SECRET` | Secret key string | Yes | Stream API secret |
+| `GEMINI_API_KEY` | Secret key string | Optional/feature-based | Gemini integration |
+| `DEEPGRAM_API_KEY` | Secret key string | Optional/feature-based | Deepgram integration |
+| `ELEVENLABS_API_KEY` | Secret key string | Optional/feature-based | ElevenLabs integration |
+| `CASCADE_ALLOW_BARGE_IN` | Boolean (`true/false`) | Optional | `false` |
+| `CASCADE_MIN_INTERRUPTION_CHARS` | Integer | Optional | `12` |
+| `VOICE_PIPELINE_TOKEN` | Secret string | Yes | must match web app token |
+| `VOICE_PIPELINE_URL` | URL string | Yes | `http://localhost:3000` |
+
+#### `.\backend-vision-agent\.env.docker` (Docker vision-agent container)
+
+| Variable | Type | Required | Docker Value / Expected |
+|---|---|---|---|
+| `VOICE_TRANSPORT` | Enum/string | Yes | `stream` |
+| `VOICE_PIPELINE_URL` | Internal URL string | Yes | `http://web:3000` |
+| `VOICE_PIPELINE_TOKEN` | Secret string | Yes | must match web app token |
+| `STREAM_API_KEY` | Public/API key string | Yes | Stream API key |
+| `STREAM_API_SECRET` | Secret key string | Yes | Stream API secret |
+| `GEMINI_API_KEY` | Secret key string | Optional/feature-based | Gemini integration |
+| `DEEPGRAM_API_KEY` | Secret key string | Optional/feature-based | Deepgram integration |
+| `ELEVENLABS_API_KEY` | Secret key string | Optional/feature-based | ElevenLabs integration |
+| `CASCADE_ALLOW_BARGE_IN` | Boolean (`true/false`) | Optional | `false` |
+| `CASCADE_MIN_INTERRUPTION_CHARS` | Integer | Optional | `12` |
+
+---
+
+## URL Rules
+
+- Use `localhost` for browser/host-machine access.
+- Use Docker service names for container-to-container calls:
+  - `web`, `backend`, `inngest`, `vision-agent`.
+
+---
+
+## References
+
+- Next.js: https://nextjs.org/docs  
+- Convex: https://docs.convex.dev  
+- Inngest: https://www.inngest.com/docs  
+- Docker Compose: https://docs.docker.com/compose/  
+- Stream Video: https://getstream.io/video/docs/  
+- Deepgram: https://developers.deepgram.com/docs  
+- ElevenLabs: https://elevenlabs.io/docs  
+- Google Gemini API: https://ai.google.dev/gemini-api/docs
