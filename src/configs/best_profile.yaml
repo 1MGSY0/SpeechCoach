@@ -1,5 +1,0 @@
-profile: best_candidate
-asr: {impl: faster_whisper, model_size: small, compute_type: float16}
-llm: {impl: llama_cpp, model_path: models/TinyLlama-1.1B.q4_0.gguf}
-tts: {impl: coqui, model_name: tts_models/en/ljspeech/fast_pitch, vocoder_name: vocoder_models/en/ljspeech/hifigan_v2}
-notes: placeholder pending benchmark results

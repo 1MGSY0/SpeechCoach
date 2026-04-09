@@ -1,6 +1,0 @@
-impl: faster_whisper
-model_size: small  # tiny / base / small / medium for speed/accuracy tradeoff
-compute_type: float16     # int8_float16 for VRAM savings
-chunk_ms: 320
-beam_size: 1
-language: en

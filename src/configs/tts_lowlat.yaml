@@ -1,6 +1,0 @@
-impl: coqui
-model_name: tts_models/en/ljspeech/fast_pitch
-vocoder_name: vocoder_models/en/ljspeech/hifigan_v2
-streaming: true
-device: cuda  
-language: en
