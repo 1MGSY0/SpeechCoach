@@ -1,6 +1,6 @@
 # SpeechCoach Evaluation
 
-This evaluation flow is for the `speech-coach` application itself, not the generic pipeline benchmark.
+This evaluation flow is for the `speech-coach` application itself.
 
 It focuses on two layers:
 

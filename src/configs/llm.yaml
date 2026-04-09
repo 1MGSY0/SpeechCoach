@@ -1,4 +1,0 @@
-impl: stub
-template: |
-  You said: "{asr_text}"
-  Thanks for sharing. Could you clarify your case ID?
