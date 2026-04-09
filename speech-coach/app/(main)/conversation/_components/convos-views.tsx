@@ -24,6 +24,8 @@ export default function ConversationView({ preloadedConversations }) {
         onRowClick={(row) => router.push(`/conversation/${row._id}`)}
         data={items}
         columns={columns}
+        variant="cards"
+        cardsContainerClassName="grid grid-cols-1 gap-4 xl:grid-cols-2"
       />
       <DataPagination
         page={filters.page}

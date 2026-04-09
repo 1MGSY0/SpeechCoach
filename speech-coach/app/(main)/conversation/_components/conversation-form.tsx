@@ -22,6 +22,8 @@ const conversationSchema = z.object({
   name: z.string().min(1, "Name is required."),
   personaId: z.string().min(1, "Persona is required."),
   rubricId: z.string().min(1, "Rubric is required."),
+  modelPipeline: z.enum(["gemini_realtime", "gemini_cascade"]),
+  voiceGender: z.enum(["female", "male"]),
 });
 
 type ConversationFormValues = z.infer<typeof conversationSchema>;
@@ -33,6 +35,9 @@ interface ConversationFormProps {
     rubricId?: Id<"AssessmentFramework">;
   };
 }
+
+const fieldLabelClassName =
+  "text-sm font-semibold uppercase tracking-[0.14em] text-primary/70";
 
 export const ConversationForm = ({
   onSuccess,
@@ -51,6 +56,8 @@ export const ConversationForm = ({
       name: initialValues?.name ?? "",
       personaId: initialValues?.personaId ?? "",
       rubricId: initialValues?.rubricId ?? "",
+      modelPipeline: initialValues?.modelPipeline ?? "gemini_realtime",
+      voiceGender: initialValues?.voiceGender ?? "female",
     },
   });
 
@@ -58,7 +65,7 @@ export const ConversationForm = ({
 
   const personasResponse = useQuery(
     api.Persona.ListPersonas,
-    hasUser ? { userId: userData._id } : "skip"
+    hasUser ? { userId: userData._id, pageSize: 100 } : "skip"
   );
   const personas = personasResponse?.items ?? [];
 
@@ -69,6 +76,8 @@ export const ConversationForm = ({
 
   const selectedPersonaId = form.watch("personaId");
   const selectedRubricId = form.watch("rubricId");
+  const selectedModelPipeline = form.watch("modelPipeline");
+  const selectedVoiceGender = form.watch("voiceGender");
 
   const personaOptions = useMemo(
     () =>
@@ -106,6 +115,38 @@ export const ConversationForm = ({
     [rubrics]
   );
 
+  const voiceGenderOptions = useMemo(
+    () => [
+      {
+        id: "female",
+        value: "female",
+        children: <span>Female voice</span>,
+      },
+      {
+        id: "male",
+        value: "male",
+        children: <span>Male voice</span>,
+      },
+    ],
+    []
+  );
+
+  const modelPipelineOptions = useMemo(
+    () => [
+      {
+        id: "gemini_realtime",
+        value: "gemini_realtime",
+        children: <span>Unified Gemini-2.5-flash</span>,
+      },
+      {
+        id: "gemini_cascade",
+        value: "gemini_cascade",
+        children: <span>Cascaded STT + LLM + TTS</span>,
+      },
+    ],
+    []
+  );
+
   const onSubmit = async (values: ConversationFormValues) => {
     if (!userData?._id) {
       toast.error("User record not ready yet. Try again.");
@@ -119,6 +160,8 @@ export const ConversationForm = ({
           conversationId: initialValues._id,
           personaId: values.personaId as Id<"Persona">,
           rubricId: values.rubricId as Id<"AssessmentFramework">,
+          modelPipeline: values.modelPipeline,
+          voiceGender: values.voiceGender,
           name: values.name,
         });
         onSuccess?.(initialValues._id);
@@ -127,6 +170,8 @@ export const ConversationForm = ({
           userId: userData._id,
           personaId: values.personaId as Id<"Persona">,
           rubricId: values.rubricId as Id<"AssessmentFramework">,
+          modelPipeline: values.modelPipeline,
+          voiceGender: values.voiceGender,
           name: values.name,
         });
 
@@ -147,7 +192,7 @@ export const ConversationForm = ({
 
       <form className="space-y-4 p-4" onSubmit={form.handleSubmit(onSubmit)}>
         <div className="space-y-1">
-          <label className="text-xs font-medium" htmlFor="conversation-name">
+          <label className={fieldLabelClassName} htmlFor="conversation-name">
             Name
           </label>
           <Input
@@ -163,7 +208,7 @@ export const ConversationForm = ({
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium" htmlFor="conversation-persona">
+          <label className={fieldLabelClassName} htmlFor="conversation-persona">
             Persona
           </label>
           <CommandSelect
@@ -193,7 +238,7 @@ export const ConversationForm = ({
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium" htmlFor="conversation-rubric">
+          <label className={fieldLabelClassName} htmlFor="conversation-rubric">
             Rubric
           </label>
           <CommandSelect
@@ -208,6 +253,53 @@ export const ConversationForm = ({
           {form.formState.errors.rubricId && (
             <p className="text-xs text-destructive">
               {form.formState.errors.rubricId.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-1">
+          <label className={fieldLabelClassName} htmlFor="conversation-pipeline">
+            Model pipeline
+          </label>
+          <CommandSelect
+            options={modelPipelineOptions}
+            value={selectedModelPipeline}
+            onSelect={(value) =>
+              form.setValue("modelPipeline", value as ConversationFormValues["modelPipeline"], {
+                shouldValidate: true,
+              })
+            }
+            placeholder="Select a model pipeline"
+            className="w-full"
+          />
+          {form.formState.errors.modelPipeline && (
+            <p className="text-xs text-destructive">
+              {form.formState.errors.modelPipeline.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-1">
+          <label className={fieldLabelClassName} htmlFor="conversation-voice">
+            Voice
+          </label>
+          <CommandSelect
+            options={voiceGenderOptions}
+            value={selectedVoiceGender}
+            onSelect={(value) =>
+              form.setValue("voiceGender", value as ConversationFormValues["voiceGender"], {
+                shouldValidate: true,
+              })
+            }
+            placeholder="Select a voice"
+            className="w-full"
+          />
+          <p className="text-xs text-muted-foreground">
+            This maps to voices for the role-play persona.
+          </p>
+          {form.formState.errors.voiceGender && (
+            <p className="text-xs text-destructive">
+              {form.formState.errors.voiceGender.message}
             </p>
           )}
         </div>

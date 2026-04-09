@@ -18,6 +18,7 @@ export const UpdateRubricDialog = ({
       description="Edit the rubric structure and settings."
       open={open}
       onOpenChange={onOpenChange}
+      contentClassName="sm:max-w-4xl"
     >
       <RubricForm
         initialValues={initialValues}

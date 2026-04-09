@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
-import { preloadQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 import { getServerContext } from "@/lib/convex_user";
+import { serverPreloadQuery } from "@/lib/convex-server";
 
 import type { SearchParams } from "nuqs/server";
 import { loadSerchParams } from './params';
@@ -18,7 +18,7 @@ export default async function Page({ searchParams }: Props) {
   const { convexUserId } = await getServerContext();
   const filters = await loadSerchParams(searchParams);
 
-  const preloadedPersonas = await preloadQuery(api.Persona.ListPersonas, {
+  const preloadedPersonas = await serverPreloadQuery(api.Persona.ListPersonas, {
     userId: convexUserId,
     ...filters,
   });

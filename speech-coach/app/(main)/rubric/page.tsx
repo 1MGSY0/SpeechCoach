@@ -1,13 +1,13 @@
 import React, { Suspense } from "react";
-import { preloadQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
+import { serverPreloadQuery } from "@/lib/convex-server";
 
 import RubricView from "./_components/rubric_view";
 import { RubricListHeader } from "./_components/rubric-list-header";
 import { LoadingState } from "@/components/loading-state";
 
 export default async function Page() {
-  const preloadedRubrics = await preloadQuery(
+  const preloadedRubrics = await serverPreloadQuery(
     api.AssessmentFramework.GetAllAssessmentFrameworks,
     {}
   );

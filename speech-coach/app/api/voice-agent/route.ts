@@ -1,13 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchMutation, fetchQuery } from "convex/nextjs";
 import type { Id } from "@/convex/_generated/dataModel";
 import { api } from "@/convex/_generated/api";
 import { stripPersonaMeta } from "@/components/extract-persona";
+import { composeRoleplayInstructions } from "@/lib/semantic-memory";
+import { serverFetchMutation, serverFetchQuery } from "@/lib/convex-server";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const voiceAgentBaseUrl =
   process.env.VOICE_AGENT_URL;
+
+const voiceNameByGender = {
+  female: "Leda",
+  male: "Puck",
+} as const;
+
+function getConversationPipeline(conversation: { modelPipeline?: string | null }) {
+  return conversation.modelPipeline === "gemini_cascade"
+    ? "gemini_cascade"
+    : "gemini_realtime";
+}
+
+function getConversationVoice(conversation: { voiceGender?: string | null; voiceName?: string | null }) {
+  if (conversation.voiceName) {
+    return conversation.voiceName;
+  }
+
+  if (conversation.voiceGender === "male") {
+    return voiceNameByGender.male;
+  }
+
+  return voiceNameByGender.female;
+}
+
+function isSemanticMemoryEnabled(conversation: { semanticMemoryEnabled?: boolean | null }) {
+  return conversation.semanticMemoryEnabled !== false;
+}
+
+function getConversationInstructions(
+  conversation: { summary?: string | null; semanticMemoryEnabled?: boolean | null },
+  baseInstructions: string
+) {
+  return composeRoleplayInstructions({
+    baseInstructions,
+    memoryJson: isSemanticMemoryEnabled(conversation)
+      ? conversation.summary ?? ""
+      : "",
+  });
+}
 
 export async function GET(req: NextRequest) {
   
@@ -19,7 +61,7 @@ export async function GET(req: NextRequest) {
   }
   const conversationId = param_conversationId as Id<"Conversations">;
 
-  const conversation = await fetchQuery(api.Conversations.GetConversationById, {
+  const conversation = await serverFetchQuery(api.Conversations.GetConversationById, {
     conversationId,
   });
 
@@ -28,7 +70,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
   }
 
-  const persona = await fetchQuery(api.Persona.GetPersonaDetails, {
+  const persona = await serverFetchQuery(api.Persona.GetPersonaDetails, {
     userId: conversation.userId,
     personaId: conversation.personaId,
   });
@@ -37,15 +79,31 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Persona not found" }, { status: 404 });
   }
 
-  return NextResponse.json({
-    conversationId: conversation._id,
-    personaId: persona._id,
-    personaName: persona.name,
-    instructions: stripPersonaMeta(persona.instructions) ?? "",
-    conversationName: conversation.name ?? "",
-    userId: conversation.userId,
-    userName: conversation.userName ?? "User",
-  });
+  return NextResponse.json(
+    {
+      conversationId: conversation._id,
+      personaId: persona._id,
+      personaName: persona.name,
+      instructions: getConversationInstructions(
+        conversation,
+        stripPersonaMeta(persona.instructions) ?? ""
+      ),
+      conversationName: conversation.name ?? "",
+      userId: conversation.userId,
+      userName: conversation.userName ?? "User",
+      modelPipeline: getConversationPipeline(conversation),
+      voiceGender: conversation.voiceGender ?? "female",
+      voiceName: getConversationVoice(conversation),
+      semanticMemoryEnabled: isSemanticMemoryEnabled(conversation),
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    }
+  );
 }
 
 export async function POST(req: NextRequest) {
@@ -71,7 +129,7 @@ export async function POST(req: NextRequest) {
   const userId = payload.userId as Id<"User">;
   const conversationId = payload.conversationId as Id<"Conversations">;
 
-  const conversation = await fetchQuery(api.Conversations.GetConversationDetails, {
+  const conversation = await serverFetchQuery(api.Conversations.GetConversationDetails, {
     userId,
     conversationId,
   });
@@ -92,7 +150,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const persona = await fetchQuery(api.Persona.GetPersonaDetails, {
+  const persona = await serverFetchQuery(api.Persona.GetPersonaDetails, {
     userId,
     personaId: conversation.personaId,
   });
@@ -101,7 +159,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Agent not found" }, { status: 404 });
   }
 
-  await fetchMutation(api.Conversations.UpdateConversation, {
+  await serverFetchMutation(api.Conversations.UpdateConversation, {
     userId,
     conversationId,
     status: "active",
@@ -120,10 +178,17 @@ export async function POST(req: NextRequest) {
         conversationId,
         personaId: persona._id,
         personaName: persona.name,
-        instructions: stripPersonaMeta(persona.instructions) ?? "",
+        instructions: getConversationInstructions(
+          conversation,
+          stripPersonaMeta(persona.instructions) ?? ""
+        ),
         conversationName: conversation.name,
         userId,
         userName: conversation.userName,
+        modelPipeline: getConversationPipeline(conversation),
+        voiceGender: conversation.voiceGender ?? "female",
+        voiceName: getConversationVoice(conversation),
+        semanticMemoryEnabled: isSemanticMemoryEnabled(conversation),
       }),
     }
   );
@@ -160,7 +225,7 @@ export async function DELETE(req: NextRequest) {
   const userId = payload.userId as Id<"User">;
   const conversationId = payload.conversationId as Id<"Conversations">;
 
-  const conversation = await fetchQuery(api.Conversations.GetConversationDetails, {
+  const conversation = await serverFetchQuery(api.Conversations.GetConversationDetails, {
     userId,
     conversationId,
   });
@@ -176,7 +241,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ status: "ok" });
   }
 
-  await fetchMutation(api.Conversations.UpdateConversation, {
+  await serverFetchMutation(api.Conversations.UpdateConversation, {
     userId,
     conversationId,
     status: "processing",

@@ -2,10 +2,12 @@ import {
   ChevronRightIcon,
   TrashIcon,
   PencilIcon,
+  RefreshCcwIcon,
+  FileDownIcon,
   MoreVerticalIcon,
 } from "lucide-react";
 
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -24,18 +26,33 @@ import {
 interface Props {
   conversationId: string;
   conversationName: string;
-  onEdit: () => void;
+  onPrimaryAction: () => void;
+  primaryActionLabel?: string;
+  primaryActionIcon?: "edit" | "re-evaluate";
+  primaryActionDisabled?: boolean;
+  onEditName?: () => void;
+  onDownloadPdf?: () => void;
+  canDownloadPdf?: boolean;
   onRemove: () => void;
 }
 
 export const ConversationIdViewHeader = ({
   conversationId,
   conversationName,
-  onEdit,
+  onPrimaryAction,
+  primaryActionLabel = "Edit",
+  primaryActionIcon = "edit",
+  primaryActionDisabled = false,
+  onEditName,
+  onDownloadPdf,
+  canDownloadPdf = false,
   onRemove,
 }: Props) => {
+  const PrimaryActionIcon =
+    primaryActionIcon === "re-evaluate" ? RefreshCcwIcon : PencilIcon;
+
   return (
-    <div className="flex items-center justify-between">
+    <div className="sticky top-4 z-20 flex items-center justify-between rounded-2xl border border-white/50 bg-transparent px-4 py-3 shadow-sm shadow-primary/5 backdrop-blur-md">
       <Breadcrumb className={undefined}>
         <BreadcrumbList className={undefined}>
           <BreadcrumbItem className={undefined}>
@@ -62,23 +79,42 @@ export const ConversationIdViewHeader = ({
         </BreadcrumbList>
       </Breadcrumb>
 
-      <DropdownMenu modal={false}>
-        <DropdownMenuTrigger
-          className={buttonVariants({ variant: "ghost", size: "icon" })}
-        >
-          <MoreVerticalIcon />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className={undefined}>
-          <DropdownMenuItem onClick={onEdit} className={undefined} inset={undefined}>
-            <PencilIcon className="size-4 text-black" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={onRemove} className={undefined} inset={undefined}>
-            <TrashIcon className="size-4 text-black" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-2">
+        {canDownloadPdf && onDownloadPdf ? (
+          <Button type="button" variant="ghost" size="sm" onClick={onDownloadPdf}>
+            <FileDownIcon className="size-4" />
+            Download PDF
+          </Button>
+        ) : null}
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger
+            className={buttonVariants({ variant: "ghost", size: "icon" })}
+          >
+            <MoreVerticalIcon />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className={undefined}>
+            <DropdownMenuItem
+              onClick={onPrimaryAction}
+              disabled={primaryActionDisabled}
+              className={undefined}
+              inset={undefined}
+            >
+              <PrimaryActionIcon className="size-4 text-black" />
+              {primaryActionLabel}
+            </DropdownMenuItem>
+            {onEditName ? (
+              <DropdownMenuItem onClick={onEditName} className={undefined} inset={undefined}>
+                <PencilIcon className="size-4 text-black" />
+                Edit name
+              </DropdownMenuItem>
+            ) : null}
+            <DropdownMenuItem onClick={onRemove} className={undefined} inset={undefined}>
+              <TrashIcon className="size-4 text-black" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 };

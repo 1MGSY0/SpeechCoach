@@ -1,0 +1,104 @@
+services:
+  backend:
+    image: ghcr.io/get-convex/convex-backend:latest
+    container_name: speechcoach-convex-backend
+    stop_grace_period: 10s
+    stop_signal: SIGINT
+    ports:
+      - "${PORT:-3210}:3210"
+      - "${SITE_PROXY_PORT:-3211}:3211"
+    volumes:
+      - data:/convex/data
+    environment:
+      CONVEX_CLOUD_ORIGIN: ${CONVEX_CLOUD_ORIGIN:-http://127.0.0.1:${PORT:-3210}}
+      CONVEX_SITE_ORIGIN: ${CONVEX_SITE_ORIGIN:-http://127.0.0.1:${SITE_PROXY_PORT:-3211}}
+      DISABLE_METRICS_ENDPOINT: ${DISABLE_METRICS_ENDPOINT:-true}
+      DOCUMENT_RETENTION_DELAY: ${DOCUMENT_RETENTION_DELAY:-172800}
+      INSTANCE_SECRET: ${INSTANCE_SECRET}
+      RUST_LOG: ${RUST_LOG:-info}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3210/version"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  dashboard:
+    image: ghcr.io/get-convex/convex-dashboard:latest
+    container_name: speechcoach-convex-dashboard
+    stop_grace_period: 10s
+    stop_signal: SIGINT
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${DASHBOARD_PORT:-6791}:6791"
+    environment:
+      NEXT_PUBLIC_DEPLOYMENT_URL: ${NEXT_PUBLIC_DEPLOYMENT_URL:-http://127.0.0.1:${PORT:-3210}}
+      NEXT_PUBLIC_LOAD_MONACO_INTERNALLY: ${NEXT_PUBLIC_LOAD_MONACO_INTERNALLY:-true}
+
+  web:
+    build:
+      context: ./speech-coach
+      target: runner
+    container_name: speechcoach-web
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - ./speech-coach/.env.docker
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000').then((res)=>process.exit(res.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  vision-agent:
+    build:
+      context: ./backend-vision-agent
+    container_name: speechcoach-vision-agent
+    depends_on:
+      web:
+        condition: service_healthy
+    env_file:
+      - ./backend-vision-agent/.env.docker
+    ports:
+      - "${VOICE_AGENT_PORT:-8000}:8000"
+
+  inngest:
+    image: node:20-bookworm-slim
+    container_name: speechcoach-inngest
+    depends_on:
+      web:
+        condition: service_healthy
+    working_dir: /app
+    command:
+      [
+        "npx",
+        "--yes",
+        "--ignore-scripts=false",
+        "inngest-cli@latest",
+        "dev",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8288",
+        "--no-discovery",
+        "-u",
+        "${INNGEST_APP_URL:-http://web:3000/api/inngest}",
+      ]
+    ports:
+      - "${INNGEST_PORT:-8288}:8288"
+
+volumes:
+  data:
+    name: speech-coach_data

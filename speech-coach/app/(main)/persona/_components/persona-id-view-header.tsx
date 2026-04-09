@@ -25,7 +25,7 @@ interface Props {
 
 export const PersonaIdViewHeader = ({ personaId, personaName, onEdit, onRemove }: Props) => {
   return (
-    <div className="flex items-center justify-between">
+    <div className="sticky top-4 z-20 flex items-center justify-between rounded-2xl border border-white/50 bg-transparent px-4 py-3 shadow-sm shadow-primary/5 backdrop-blur-md">
       <Breadcrumb className={undefined}>
         <BreadcrumbList className={undefined}>
           <BreadcrumbItem className={undefined}>

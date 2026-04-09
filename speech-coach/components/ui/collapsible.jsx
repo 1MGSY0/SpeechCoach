@@ -15,9 +15,16 @@ function CollapsibleTrigger({
 }
 
 function CollapsibleContent({
+  forceMount,
   ...props
 }) {
-  return (<CollapsiblePrimitive.Panel data-slot="collapsible-content" {...props} />);
+  return (
+    <CollapsiblePrimitive.Panel
+      data-slot="collapsible-content"
+      keepMounted={forceMount}
+      {...props}
+    />
+  );
 }
 
 export { Collapsible, CollapsibleTrigger, CollapsibleContent }

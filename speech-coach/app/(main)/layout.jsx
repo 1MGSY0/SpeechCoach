@@ -6,14 +6,14 @@ import { LoadingState } from '@/components/loading-state'
 function DashboardLayout({ children }) {
   return (
       <Providers>
-        <div>
+        <div className="min-h-screen bg-slate-100">
             <AppHeader />
             <Suspense
               fallback={
                 <LoadingState title="Loading..." description="Loading your workspace." />
               }
             >
-              <div className='p-10 mt-8 md:px-20 lg:px-32 xl:px-48 2xl:px-96'>
+              <div className="mx-auto mt-8 w-full max-w-[min(80vw,1600px)] px-4 py-10 sm:px-6 lg:px-8">
                 {children}
               </div>
             </Suspense>

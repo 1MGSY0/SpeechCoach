@@ -203,13 +203,13 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "python-dotenv" },
-    { name = "vision-agents", extra = ["gemini", "getstream"] },
+    { name = "vision-agents", extra = ["deepgram", "elevenlabs", "gemini", "getstream"] },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "python-dotenv", specifier = ">=1.2.2" },
-    { name = "vision-agents", extras = ["gemini", "getstream"], specifier = ">=0.4.5" },
+    { name = "vision-agents", extras = ["gemini", "getstream", "deepgram", "elevenlabs"], specifier = ">=0.4.5" },
 ]
 
 [[package]]
@@ -423,6 +423,22 @@ wheels = [
 ]
 
 [[package]]
+name = "deepgram-sdk"
+version = "6.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "pydantic-core" },
+    { name = "typing-extensions" },
+    { name = "websockets" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/73/46/6dc45de574d766a20853452d7beccf17cb0cfeb685a0f03460f1fe49b48e/deepgram_sdk-6.0.1.tar.gz", hash = "sha256:88558a43d6173a861c8b6d6491b9ee8805679fb09fb81ef51eeb6871dad77767", size = 176743, upload-time = "2026-02-24T13:52:17.163Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/58/a4/53b9075816edc566694aed014d9864febedf232677b74f5d30bdde64b5de/deepgram_sdk-6.0.1-py3-none-any.whl", hash = "sha256:1b33d621b1c0b1d7a6a7b46fdc393aef4212e670521fada99764f5fb3f9d55fd", size = 490751, upload-time = "2026-02-24T13:52:15.998Z" },
+]
+
+[[package]]
 name = "distro"
 version = "1.9.0"
 source = { registry = "https://pypi.org/simple" }
@@ -438,6 +454,23 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/8c/8b/57666417c0f90f08bcafa776861060426765fdb422eb10212086fb811d26/dnspython-2.8.0.tar.gz", hash = "sha256:181d3c6996452cb1189c4046c61599b84a5a86e099562ffde77d26984ff26d0f", size = 368251, upload-time = "2025-09-07T18:58:00.022Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ba/5a/18ad964b0086c6e62e2e7500f7edc89e3faa45033c71c1893d34eed2b2de/dnspython-2.8.0-py3-none-any.whl", hash = "sha256:01d9bbc4a2d76bf0db7c1f729812ded6d912bd318d3b1cf81d30c0f845dbf3af", size = 331094, upload-time = "2025-09-07T18:57:58.071Z" },
+]
+
+[[package]]
+name = "elevenlabs"
+version = "2.41.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "pydantic-core" },
+    { name = "requests" },
+    { name = "typing-extensions" },
+    { name = "websockets" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/64/1e/0f0c8e489d0909e0a474e4d5a0f480daae452c0cbc09a2fb65c66dc50b07/elevenlabs-2.41.0.tar.gz", hash = "sha256:70af75aae931b55c4810f912f01825b0e8316566b419e4838dfa22f6a806de1d", size = 531070, upload-time = "2026-04-01T12:18:38.44Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6b/e9/55925cdbfc32b64cadc7da60042d6a96e3c22272589c343db007eb2ee7f4/elevenlabs-2.41.0-py3-none-any.whl", hash = "sha256:cc107f07eebabd7a807fe59c37e618b10f90bea2a1a861b40fab01d2a66e9c9b", size = 1446391, upload-time = "2026-04-01T12:18:36.789Z" },
 ]
 
 [[package]]
@@ -1668,11 +1701,43 @@ wheels = [
 ]
 
 [package.optional-dependencies]
+deepgram = [
+    { name = "vision-agents-plugins-deepgram" },
+]
+elevenlabs = [
+    { name = "vision-agents-plugins-elevenlabs" },
+]
 gemini = [
     { name = "vision-agents-plugins-gemini" },
 ]
 getstream = [
     { name = "vision-agents-plugins-getstream" },
+]
+
+[[package]]
+name = "vision-agents-plugins-deepgram"
+version = "0.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "deepgram-sdk" },
+    { name = "vision-agents" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/95/d8/970db39c64764c8d730502e9e0eb815a1eeb47c86a82bd14f80f0a276f80/vision_agents_plugins_deepgram-0.5.0.tar.gz", hash = "sha256:14cb8d2d400a1f86bf9088e70098da8e853c035c118403f8b1dfe12dea884663", size = 7030, upload-time = "2026-04-01T17:18:49.853Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e7/00/0a68152c6a93e8808c9d775443b6568018ca02dfd2e6b5f9d119c2f93f3e/vision_agents_plugins_deepgram-0.5.0-py3-none-any.whl", hash = "sha256:10a714b980fce1c338c65b0cec20f87ecbafdfcc397f88a7f5b22d435c07f8c5", size = 17373, upload-time = "2026-04-01T17:18:47.815Z" },
+]
+
+[[package]]
+name = "vision-agents-plugins-elevenlabs"
+version = "0.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "elevenlabs" },
+    { name = "vision-agents" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/bf/8f/2595bd750e0b5b4cdf805d9923db59b32cb2d12e2cce5f2cb2b366a51c91/vision_agents_plugins_elevenlabs-0.5.0.tar.gz", hash = "sha256:ed3ef9bad6aefb1428b686b0bc02a2b6a35f1fb970067a6c78e6f74c4f339345", size = 6526, upload-time = "2026-04-01T17:18:44.729Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a4/9b/1453ccf4f1583c32641ef24a844fafc7e5cb5df094f6aaaefb55c47ab1a5/vision_agents_plugins_elevenlabs-0.5.0-py3-none-any.whl", hash = "sha256:c9e31857f48bf6dd63bf0249800c2d20abdff2b0faf9d9927ca81bb9189603ef", size = 16104, upload-time = "2026-04-01T17:19:19.425Z" },
 ]
 
 [[package]]

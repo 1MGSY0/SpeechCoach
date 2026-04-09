@@ -99,7 +99,7 @@ export const CommandSelect = ({
                   <span className="sr-only">Close</span>
                 </Button>
               </div>
-              <CommandList className={undefined}>
+              <CommandList className="max-h-[min(60vh,24rem)] overscroll-contain">
                 <CommandEmpty className={undefined}>
                   <span className="text-muted-foreground text-sm">
                     No options found

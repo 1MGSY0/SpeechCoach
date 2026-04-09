@@ -1,8 +1,16 @@
 import { serve } from "inngest/next";
 import { inngest } from "@/inngest/client";
-import { testConversationProcessing, conversationProcessing } from "@/inngest/functions";
+import {
+  conversationMemoryUpdate,
+  testConversationProcessing,
+  conversationProcessing,
+} from "@/inngest/functions";
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [testConversationProcessing, conversationProcessing],
+  functions: [
+    testConversationProcessing,
+    conversationMemoryUpdate,
+    conversationProcessing,
+  ],
 });

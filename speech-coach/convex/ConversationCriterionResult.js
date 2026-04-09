@@ -1,6 +1,12 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+const turnRefValidator = v.object({
+  text: v.string(),
+  timestamp: v.string(),
+});
+const turnRefValueValidator = v.union(v.number(), turnRefValidator);
+
 export const CreateConversationCriterionResult = mutation({
   args: {
     assessmentId: v.id("ConversationAssessment"),
@@ -11,7 +17,7 @@ export const CreateConversationCriterionResult = mutation({
     maxScore: v.optional(v.number()),
     feedback: v.optional(v.string()),
     evidence: v.optional(v.array(v.string())),
-    turnRefs: v.optional(v.array(v.number())),
+    turnRefs: v.optional(v.array(turnRefValueValidator)),
   },
   handler: async (ctx, args) => {
     const assessment = await ctx.db.get(args.assessmentId);
@@ -72,7 +78,7 @@ export const UpdateConversationCriterionResult = mutation({
     maxScore: v.optional(v.number()),
     feedback: v.optional(v.string()),
     evidence: v.optional(v.array(v.string())),
-    turnRefs: v.optional(v.array(v.number())),
+    turnRefs: v.optional(v.array(turnRefValueValidator)),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db.get(args.resultId);
@@ -115,7 +121,7 @@ export const UpsertConversationCriterionResult = mutation({
     maxScore: v.optional(v.number()),
     feedback: v.optional(v.string()),
     evidence: v.optional(v.array(v.string())),
-    turnRefs: v.optional(v.array(v.number())),
+    turnRefs: v.optional(v.array(turnRefValueValidator)),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db

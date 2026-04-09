@@ -1,6 +1,6 @@
-import { preloadQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { serverPreloadQuery } from "@/lib/convex-server";
 
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
@@ -20,7 +20,7 @@ export default async function Page({ params }: Props) {
 
   const rubricConvexId = frameworkId as Id<"AssessmentFramework">;
 
-  const preloadedRubric = await preloadQuery(
+  const preloadedRubric = await serverPreloadQuery(
     api.AssessmentFramework.GetFrameworkWithStructure,
     {
       frameworkId: rubricConvexId,

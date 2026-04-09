@@ -16,6 +16,7 @@ export const NewRubricDialog = ({
       description="Create a new rubric and define its assessment structure."
       open={open}
       onOpenChange={onOpenChange}
+      contentClassName="sm:max-w-4xl"
     >
       <RubricForm
         onSuccess={() => onOpenChange(false)}
