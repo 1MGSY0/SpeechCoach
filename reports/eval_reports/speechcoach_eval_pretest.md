@@ -68,14 +68,3 @@
 | Cascaded 1 nvidia openrouter | 2 | snapshot | 14:32:59 | 14:34:23 | 83.82 | 5 | 2 | - | - | N/A | N/A | N/A | N/A | N/A | N/A |
 | Cascaded 1 nvidia openrouter | 3 | snapshot | 14:37:48 | 14:39:42 | 113.18 | 12 | 6 | - | - | N/A | N/A | N/A | N/A | N/A | N/A |
 
-## 7. Interpretation Notes
-
-- `TTFP` is measured from speech start to first partial user transcription output.
-- `TTFR` is measured from detected user turn end to first audible agent response, with first model output used only as a fallback when audio-start is unavailable.
-- `E2E` is measured from speech start to completed agent response playback.
-- `ASR`, `LLM`, `TTS start`, and `Playback` break the full response path into stage-level timings to show where latency accumulates.
-- `Contradiction rate` is a heuristic count of assistant replies that appear to reverse earlier assistant statements. The script compares each assistant turn against the previous assistant turn and flags a contradiction only when three conditions are met: the earlier turn contains an affirmative cue such as `confirmed`, `approved`, or `received`; the later turn contains a negative cue such as `not`, `denied`, `missing`, or `rejected`; and both turns share at least one extracted entity such as a date, case-like identifier, or other matched entity token. The reported rate is `flagged contradictions / total assistant turns`. Because this rule is lexical and entity-based, it should be paired with manual review in thesis reporting.
-- `Expected entity coverage` is available when each session includes `expectedEntities`.
-- `Memory timestamp alignment` checks whether semantic-memory progression logs point to real transcript timestamps.
-- `Semantic memory processing` is stored in milliseconds but shown in seconds in this report for readability.
-- `Memory Run Metrics` records total duration from the start of the Inngest memory-update function to completion of semantic-memory parsing. It does not include call-agent startup time and historically did not include the final Convex save. New runs also include stage-level timings so long final updates can be attributed to model generation, fetch, parse, or save.

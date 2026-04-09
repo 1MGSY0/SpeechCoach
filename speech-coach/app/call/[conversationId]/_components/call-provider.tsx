@@ -11,6 +11,7 @@ import { CallConnect } from "./call-connect";
 interface Props {
   conversationId: string;
   conversationName: string;
+  userGoal?: string | null;
   transcriptText?: string | null;
   personaName?: string | null;
 }
@@ -18,6 +19,7 @@ interface Props {
 export const CallProvider = ({
   conversationId,
   conversationName,
+  userGoal,
   transcriptText,
   personaName,
 }: Props) => {
@@ -35,6 +37,7 @@ export const CallProvider = ({
     <CallConnect
       conversationId={conversationId}
       conversationName={conversationName}
+      userGoal={userGoal}
       transcriptText={transcriptText}
       personaName={personaName}
       userId={userData._id}

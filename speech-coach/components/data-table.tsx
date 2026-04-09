@@ -1,11 +1,13 @@
 "use client"
 
+import type { HTMLAttributes, Ref } from "react"
 import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table"
+import { cn } from "@/lib/utils"
 
 import {
   Table,
@@ -19,6 +21,10 @@ interface DataTableProps<TData, TValue> {
   data: TData[]
   onRowClick?: (row: TData) => void;
   variant?: "table" | "cards";
+  cardsContainerClassName?: string;
+  cardsContainerRef?: Ref<HTMLDivElement>;
+  cardsItemClassName?: string;
+  cardsContainerProps?: HTMLAttributes<HTMLDivElement>;
 }
 
 export function DataTable<TData, TValue>({
@@ -26,6 +32,10 @@ export function DataTable<TData, TValue>({
   data,
   onRowClick,
   variant = "table",
+  cardsContainerClassName,
+  cardsContainerRef,
+  cardsItemClassName,
+  cardsContainerProps,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -35,14 +45,18 @@ export function DataTable<TData, TValue>({
 
   if (variant === "cards") {
     return (
-      <div className="flex flex-col gap-3">
+      <div
+        ref={cardsContainerRef}
+        {...cardsContainerProps}
+        className={cn("grid gap-3", cardsContainerClassName, cardsContainerProps?.className)}
+      >
         {table.getRowModel().rows?.length ? (
           table.getRowModel().rows.map((row) => (
             <div
               onClick={() => onRowClick?.(row.original)}
               key={row.id}
               data-state={row.getIsSelected() && "selected"}
-              className="cursor-pointer"
+              className={cn("cursor-pointer", cardsItemClassName)}
             >
               {row.getVisibleCells().map((cell) => (
                 <div key={cell.id}>

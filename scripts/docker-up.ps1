@@ -144,6 +144,19 @@ if ($rootEnvValues.ContainsKey("INSTANCE_SECRET")) {
     $instanceSecret = $rootEnvValues["INSTANCE_SECRET"].Trim()
 }
 
+$expectedInngestAppUrl = "http://web:3000/api/inngest"
+$inngestAppUrl = ""
+if ($rootEnvValues.ContainsKey("INNGEST_APP_URL")) {
+    $inngestAppUrl = $rootEnvValues["INNGEST_APP_URL"].Trim()
+}
+
+if (-not $inngestAppUrl) {
+    Set-EnvValue -Path $rootEnv -Key "INNGEST_APP_URL" -Value $expectedInngestAppUrl
+    Write-Host "Set INNGEST_APP_URL to $expectedInngestAppUrl for Docker service discovery."
+} elseif ($inngestAppUrl -ne $expectedInngestAppUrl) {
+    Write-Warning "INNGEST_APP_URL is '$inngestAppUrl'. Docker deployment should use '$expectedInngestAppUrl'."
+}
+
 if (-not $instanceSecret) {
     if ($createdRootEnv) {
         $instanceSecret = New-RandomHex

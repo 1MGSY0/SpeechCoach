@@ -36,6 +36,9 @@ interface ConversationFormProps {
   };
 }
 
+const fieldLabelClassName =
+  "text-sm font-semibold uppercase tracking-[0.14em] text-primary/70";
+
 export const ConversationForm = ({
   onSuccess,
   onCancel,
@@ -133,12 +136,12 @@ export const ConversationForm = ({
       {
         id: "gemini_realtime",
         value: "gemini_realtime",
-        children: <span>Unified Gemini Live</span>,
+        children: <span>Unified Gemini-2.5-flash</span>,
       },
       {
         id: "gemini_cascade",
         value: "gemini_cascade",
-        children: <span>Cascaded Gemini + STT + TTS</span>,
+        children: <span>Cascaded STT + LLM + TTS</span>,
       },
     ],
     []
@@ -189,7 +192,7 @@ export const ConversationForm = ({
 
       <form className="space-y-4 p-4" onSubmit={form.handleSubmit(onSubmit)}>
         <div className="space-y-1">
-          <label className="text-xs font-medium" htmlFor="conversation-name">
+          <label className={fieldLabelClassName} htmlFor="conversation-name">
             Name
           </label>
           <Input
@@ -205,7 +208,7 @@ export const ConversationForm = ({
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium" htmlFor="conversation-persona">
+          <label className={fieldLabelClassName} htmlFor="conversation-persona">
             Persona
           </label>
           <CommandSelect
@@ -235,7 +238,7 @@ export const ConversationForm = ({
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium" htmlFor="conversation-rubric">
+          <label className={fieldLabelClassName} htmlFor="conversation-rubric">
             Rubric
           </label>
           <CommandSelect
@@ -255,7 +258,7 @@ export const ConversationForm = ({
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium" htmlFor="conversation-pipeline">
+          <label className={fieldLabelClassName} htmlFor="conversation-pipeline">
             Model pipeline
           </label>
           <CommandSelect
@@ -269,9 +272,6 @@ export const ConversationForm = ({
             placeholder="Select a model pipeline"
             className="w-full"
           />
-          <p className="text-xs text-muted-foreground">
-            Unified uses Gemini Live speech-to-speech. Cascaded uses separate STT, Gemini LLM, and TTS providers.
-          </p>
           {form.formState.errors.modelPipeline && (
             <p className="text-xs text-destructive">
               {form.formState.errors.modelPipeline.message}
@@ -280,7 +280,7 @@ export const ConversationForm = ({
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium" htmlFor="conversation-voice">
+          <label className={fieldLabelClassName} htmlFor="conversation-voice">
             Voice
           </label>
           <CommandSelect

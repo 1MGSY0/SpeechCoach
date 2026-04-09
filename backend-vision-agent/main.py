@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+import time
 from contextvars import ContextVar
 from datetime import UTC, datetime
 from dataclasses import dataclass, field
@@ -11,6 +12,8 @@ from urllib.request import Request, urlopen
 
 from dotenv import load_dotenv
 import httpx
+from getstream.video.rtc.track_util import PcmData
+from google.genai.types import Blob
 
 from vision_agents.core import Agent, AgentLauncher, Runner, User
 from vision_agents.core.agents.transcript.store import TranscriptStore
@@ -161,6 +164,24 @@ def get_env_bool(name: str, default: bool) -> bool:
     return default
 
 
+PIPELINE_EVENT_TIMEOUT_SECONDS = max(
+    5,
+    get_env_int("VOICE_PIPELINE_EVENT_TIMEOUT_SECONDS", 30),
+)
+PIPELINE_EVENT_RETRY_COUNT = max(
+    0,
+    get_env_int("VOICE_PIPELINE_EVENT_RETRY_COUNT", 2),
+)
+PIPELINE_EVENT_RETRY_DELAY_SECONDS = max(
+    0,
+    get_env_int("VOICE_PIPELINE_EVENT_RETRY_DELAY_SECONDS", 2),
+)
+PIPELINE_META_TIMEOUT_SECONDS = max(
+    5,
+    get_env_int("VOICE_PIPELINE_META_TIMEOUT_SECONDS", 20),
+)
+
+
 DEFAULT_VOICE_NAME = os.getenv("GEMINI_VOICE_NAME", "Leda")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 DEFAULT_MODEL_PIPELINE = os.getenv("VOICE_MODEL_PIPELINE", "gemini_realtime")
@@ -170,6 +191,14 @@ GEMINI_CASCADE_MAX_WORDS = get_env_int("GEMINI_CASCADE_MAX_WORDS", 75)
 CASCADE_ALLOW_BARGE_IN = get_env_bool("CASCADE_ALLOW_BARGE_IN", False)
 CASCADE_MIN_INTERRUPTION_CHARS = get_env_int("CASCADE_MIN_INTERRUPTION_CHARS", 12)
 GEMINI_REALTIME_MAX_OUTPUT_TOKENS = get_env_int("GEMINI_REALTIME_MAX_OUTPUT_TOKENS", 0)
+GEMINI_REALTIME_AUDIO_BATCH_MS = max(
+    20,
+    get_env_int("GEMINI_REALTIME_AUDIO_BATCH_MS", 60),
+)
+GEMINI_REALTIME_AUDIO_QUEUE_MAX_MS = max(
+    GEMINI_REALTIME_AUDIO_BATCH_MS,
+    get_env_int("GEMINI_REALTIME_AUDIO_QUEUE_MAX_MS", 2000),
+)
 GEMINI_REALTIME_SILENCE_DURATION_MS = get_env_int("GEMINI_REALTIME_SILENCE_DURATION_MS", 350)
 GEMINI_REALTIME_PREFIX_PADDING_MS = get_env_int("GEMINI_REALTIME_PREFIX_PADDING_MS", 50)
 GEMINI_REALTIME_START_SENSITIVITY = get_env_choice(
@@ -199,9 +228,11 @@ GEMINI_REALTIME_ACTIVITY_HANDLING = get_env_choice(
         "NO_INTERRUPTION",
     },
 )
+BUNDLED_ELEVENLABS_FEMALE_VOICE_ID = "6qpxBH5KUSDb40bij36w"
+BUNDLED_ELEVENLABS_MALE_VOICE_ID = "JKX4knVxHRiP0doaLdrj"
 DEFAULT_ELEVENLABS_VOICE_ID = os.getenv(
     "ELEVENLABS_VOICE_ID",
-    os.getenv("ELEVENLABS_FEMALE_VOICE_ID", "EXAVITQu4vr4xnSDxMaL"),
+    os.getenv("ELEVENLABS_FEMALE_VOICE_ID", BUNDLED_ELEVENLABS_FEMALE_VOICE_ID),
 )
 DEFAULT_ELEVENLABS_MODEL_ID = os.getenv(
     "ELEVENLABS_MODEL_ID",
@@ -224,9 +255,16 @@ VOICE_BY_GENDER = {
     "female": "Leda",
     "male": "Puck",
 }
+VOICE_GENDER_BY_NAME = {
+    voice_name.lower(): gender for gender, voice_name in VOICE_BY_GENDER.items()
+}
 ELEVENLABS_VOICE_BY_GENDER = {
     "female": os.getenv("ELEVENLABS_FEMALE_VOICE_ID", DEFAULT_ELEVENLABS_VOICE_ID),
-    "male": os.getenv("ELEVENLABS_MALE_VOICE_ID", "VR6AewLTigWG4xSOukaG"),
+    "male": os.getenv("ELEVENLABS_MALE_VOICE_ID", BUNDLED_ELEVENLABS_MALE_VOICE_ID),
+}
+ELEVENLABS_FALLBACK_VOICE_BY_GENDER = {
+    "female": BUNDLED_ELEVENLABS_FEMALE_VOICE_ID,
+    "male": BUNDLED_ELEVENLABS_MALE_VOICE_ID,
 }
 DEEPGRAM_TTS_MODEL_BY_GENDER = {
     "female": os.getenv("DEEPGRAM_FEMALE_TTS_MODEL", DEFAULT_DEEPGRAM_TTS_MODEL),
@@ -251,8 +289,93 @@ class PipelineAgentLauncher(AgentLauncher):
 
 
 class AudioOnlyGeminiRealtime(gemini.Realtime):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._audio_input_queue: asyncio.Queue[PcmData | None] = asyncio.Queue(
+            maxsize=max(1, GEMINI_REALTIME_AUDIO_QUEUE_MAX_MS // 20)
+        )
+        self._audio_sender_task: asyncio.Task[Any] | None = None
+
     async def watch_video_track(self, track: Any, shared_forwarder: Any = None) -> None:
         logger.info("Ignoring incoming video track to keep Gemini Live session audio-only")
+
+    async def connect(self) -> None:
+        await super().connect()
+        if self._audio_sender_task is None or self._audio_sender_task.done():
+            self._audio_sender_task = asyncio.create_task(self._audio_sender_loop())
+
+    async def close(self) -> None:
+        await self._stop_audio_sender_task()
+        await super().close()
+
+    async def simple_audio_response(
+        self, pcm: PcmData, participant: Optional[Any] = None
+    ) -> None:
+        if not self.connected:
+            return
+
+        self._current_participant = participant
+        normalized = pcm.resample(target_sample_rate=16000, target_channels=1)
+
+        if self._audio_input_queue.full():
+            try:
+                dropped = self._audio_input_queue.get_nowait()
+                if dropped is not None:
+                    logger.warning(
+                        "Gemini realtime audio send queue full; dropped %.1fms before enqueue",
+                        dropped.duration_ms,
+                    )
+            except asyncio.QueueEmpty:
+                pass
+
+        try:
+            self._audio_input_queue.put_nowait(normalized)
+        except asyncio.QueueFull:
+            logger.warning("Gemini realtime audio send queue remained full; dropping current chunk")
+
+    async def _stop_audio_sender_task(self) -> None:
+        if self._audio_sender_task is None:
+            return
+
+        task = self._audio_sender_task
+        self._audio_sender_task = None
+        try:
+            self._audio_input_queue.put_nowait(None)
+        except asyncio.QueueFull:
+            pass
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+        while not self._audio_input_queue.empty():
+            try:
+                self._audio_input_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+
+    async def _audio_sender_loop(self) -> None:
+        while True:
+            pcm = await self._audio_input_queue.get()
+            if pcm is None:
+                return
+
+            batched = pcm.copy()
+            while batched.duration_ms < GEMINI_REALTIME_AUDIO_BATCH_MS:
+                try:
+                    next_pcm = self._audio_input_queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
+
+                if next_pcm is None:
+                    return
+
+                batched.append(next_pcm)
+
+            audio_bytes = batched.samples.tobytes()
+            blob = Blob(data=audio_bytes, mime_type="audio/pcm;rate=16000")
+            await self._session.send_realtime_input(audio=blob)
 
 
 def is_provider_rate_limit_error(exc: Exception) -> bool:
@@ -276,6 +399,14 @@ def format_provider_error(exc: Exception, limit: int = 500) -> str:
     if len(compact) <= limit:
         return compact
     return f"{compact[:limit]}..."
+
+
+def is_elevenlabs_paid_plan_error(exc: Exception) -> bool:
+    if getattr(exc, "status_code", None) != 402:
+        return False
+
+    error_text = format_provider_error(exc).lower()
+    return "paid_plan_required" in error_text or "free users cannot use library voices" in error_text
 
 
 class SpeechCoachAgent(Agent):
@@ -355,6 +486,15 @@ class SpeechCoachAgent(Agent):
 
 
 class SerializedElevenLabsTTS(elevenlabs.TTS):
+    def __init__(
+        self,
+        *args: Any,
+        fallback_voice_id: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self.fallback_voice_id = fallback_voice_id
+
     async def send(self, text: str, *args: Any, **kwargs: Any) -> Any:
         spoken_text = text.strip()
         if not spoken_text:
@@ -372,6 +512,20 @@ class SerializedElevenLabsTTS(elevenlabs.TTS):
                     if ELEVENLABS_TTS_RETRY_DELAY_SECONDS:
                         await asyncio.sleep(ELEVENLABS_TTS_RETRY_DELAY_SECONDS)
                     return await super().send(spoken_text, *args, **kwargs)
+
+                if (
+                    is_elevenlabs_paid_plan_error(exc)
+                    and self.fallback_voice_id
+                    and self.voice_id != self.fallback_voice_id
+                ):
+                    previous_voice_id = self.voice_id
+                    self.voice_id = self.fallback_voice_id
+                    logger.warning(
+                        "ElevenLabs voice %s requires a paid plan; falling back to bundled voice %s",
+                        previous_voice_id,
+                        self.fallback_voice_id,
+                    )
+                    return await super().send(spoken_text, *args, **kwargs)
                 raise
 
 
@@ -380,8 +534,21 @@ def resolve_voice_name(meta: dict[str, Any]) -> str:
     if voice_name:
         return voice_name
 
-    voice_gender = str(meta.get("voiceGender") or "female").lower()
+    voice_gender = resolve_voice_gender(meta)
     return VOICE_BY_GENDER.get(voice_gender, DEFAULT_VOICE_NAME)
+
+
+def resolve_voice_gender(meta: dict[str, Any]) -> str:
+    voice_gender = str(meta.get("voiceGender") or "").strip().lower()
+    if voice_gender in VOICE_BY_GENDER:
+        return voice_gender
+
+    voice_name = str(meta.get("voiceName") or "").strip().lower()
+    inferred_gender = VOICE_GENDER_BY_NAME.get(voice_name)
+    if inferred_gender:
+        return inferred_gender
+
+    return "female"
 
 
 def resolve_elevenlabs_voice_id(meta: dict[str, Any]) -> str:
@@ -389,7 +556,7 @@ def resolve_elevenlabs_voice_id(meta: dict[str, Any]) -> str:
     if voice_id:
         return voice_id
 
-    voice_gender = str(meta.get("voiceGender") or "female").lower()
+    voice_gender = resolve_voice_gender(meta)
     return ELEVENLABS_VOICE_BY_GENDER.get(voice_gender, DEFAULT_ELEVENLABS_VOICE_ID)
 
 
@@ -398,7 +565,7 @@ def resolve_deepgram_tts_model(meta: dict[str, Any]) -> str:
     if model:
         return model
 
-    voice_gender = str(meta.get("voiceGender") or "female").lower()
+    voice_gender = resolve_voice_gender(meta)
     return DEEPGRAM_TTS_MODEL_BY_GENDER.get(voice_gender, DEFAULT_DEEPGRAM_TTS_MODEL)
 
 
@@ -521,17 +688,36 @@ def post_pipeline_event(payload: Dict[str, Any]) -> None:
         headers["x-pipeline-token"] = PIPELINE_TOKEN
 
     request = Request(url, data=body, headers=headers, method="POST")
-    try:
-        with urlopen(request, timeout=10) as response:
-            response.read()
-            logger.info("Pipeline event sent: %s", payload.get("type"))
-    except Exception as exc:
-        logger.warning("Pipeline event failed: %s", exc)
-        if hasattr(exc, "read"):
-            try:
-                logger.warning("Pipeline error body: %s", exc.read().decode("utf-8"))
-            except Exception:
-                pass
+    attempts = PIPELINE_EVENT_RETRY_COUNT + 1
+    for attempt in range(1, attempts + 1):
+        try:
+            with urlopen(request, timeout=PIPELINE_EVENT_TIMEOUT_SECONDS) as response:
+                response.read()
+                logger.info(
+                    "Pipeline event sent: %s (attempt %s/%s)",
+                    payload.get("type"),
+                    attempt,
+                    attempts,
+                )
+                return
+        except Exception as exc:
+            logger.warning(
+                "Pipeline event failed: %s (attempt %s/%s)",
+                exc,
+                attempt,
+                attempts,
+            )
+            if hasattr(exc, "read"):
+                try:
+                    logger.warning("Pipeline error body: %s", exc.read().decode("utf-8"))
+                except Exception:
+                    pass
+
+            if attempt >= attempts:
+                return
+
+            if PIPELINE_EVENT_RETRY_DELAY_SECONDS:
+                time.sleep(PIPELINE_EVENT_RETRY_DELAY_SECONDS)
 
 
 async def post_pipeline_event_async(payload: Dict[str, Any]) -> None:
@@ -734,6 +920,7 @@ def create_cascade_agent(
     tts_provider: str = "deepgram",
     elevenlabs_voice_id: str = DEFAULT_ELEVENLABS_VOICE_ID,
     deepgram_tts_model: str = DEFAULT_DEEPGRAM_TTS_MODEL,
+    voice_gender: str = "female",
 ) -> Agent:
     if VOICE_TRANSPORT != "stream":
         raise ValueError(f"Unsupported transport: {VOICE_TRANSPORT}")
@@ -754,6 +941,10 @@ def create_cascade_agent(
             api_key=os.getenv("ELEVENLABS_API_KEY"),
             voice_id=elevenlabs_voice_id,
             model_id=DEFAULT_ELEVENLABS_MODEL_ID,
+            fallback_voice_id=ELEVENLABS_FALLBACK_VOICE_BY_GENDER.get(
+                voice_gender,
+                BUNDLED_ELEVENLABS_FEMALE_VOICE_ID,
+            ),
         )
         tts_label = f"elevenlabs:{DEFAULT_ELEVENLABS_MODEL_ID}:{elevenlabs_voice_id}"
     else:
@@ -796,6 +987,7 @@ async def create_agent(**kwargs: Any) -> Agent:
     tts_provider = DEFAULT_CASCADE_TTS_PROVIDER
     elevenlabs_voice_id = DEFAULT_ELEVENLABS_VOICE_ID
     deepgram_tts_model = DEFAULT_DEEPGRAM_TTS_MODEL
+    voice_gender = "female"
 
     call_id = CURRENT_CREATE_AGENT_CALL_ID.get()
     if call_id:
@@ -803,6 +995,7 @@ async def create_agent(**kwargs: Any) -> Agent:
         persona_id = str(meta.get("personaId") or persona_id)
         persona_name = str(meta.get("personaName") or persona_name)
         model_pipeline = resolve_model_pipeline(meta)
+        voice_gender = resolve_voice_gender(meta)
         tts_provider = resolve_cascade_tts_provider(meta)
         elevenlabs_voice_id = resolve_elevenlabs_voice_id(meta)
         deepgram_tts_model = resolve_deepgram_tts_model(meta)
@@ -817,6 +1010,7 @@ async def create_agent(**kwargs: Any) -> Agent:
             tts_provider,
             elevenlabs_voice_id,
             deepgram_tts_model,
+            voice_gender,
         )
 
     return create_realtime_agent(persona_id, persona_name)
@@ -838,7 +1032,7 @@ async def fetch_session_meta(conversation_id: str) -> dict[str, Any]:
     }
 
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=float(PIPELINE_META_TIMEOUT_SECONDS)) as client:
             response = await client.get(url, headers=headers)
             if response.status_code == 404:
                 logger.warning("No session metadata found for call_id=%s", conversation_id)
@@ -973,6 +1167,8 @@ async def join_call(agent: Agent, call_type: str, call_id: str) -> None:
     async def watch_memory_updates() -> None:
         while not session_done.is_set():
             await asyncio.sleep(2.0)
+            if session_done.is_set():
+                break
 
             latest_meta = await fetch_session_meta(session.conversationId)
             latest_base_instructions = str(latest_meta.get("instructions") or "").strip()
@@ -1152,19 +1348,10 @@ async def join_call(agent: Agent, call_type: str, call_id: str) -> None:
             is_final=False,
         )
         if event.text and event.text.strip():
-            upsert_transcript_entry(
-                session,
-                speaker="User",
-                text=event.text,
-                timestamp=getattr(event, "timestamp", None),
-                is_final=False,
-                mode="partial",
-            )
-            current_user_text = str(session.transcript[-1].get("text") or event.text)
             await send_live_transcript_event(
                 agent,
                 speaker="User",
-                text=current_user_text,
+                text=event.text,
                 is_final=False,
             )
 
@@ -1182,6 +1369,7 @@ async def join_call(agent: Agent, call_type: str, call_id: str) -> None:
                 text=event.text,
                 timestamp=getattr(event, "timestamp", None),
                 is_final=True,
+                mode="final",
             )
             current_user_text = str(session.transcript[-1].get("text") or event.text)
             await send_live_transcript_event(

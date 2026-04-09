@@ -7,6 +7,7 @@ interface ConversationProcessingEventData {
   modelPipeline?: string;
   speechMetrics?: unknown;
   turnCount?: number;
+  processingToken?: string;
 }
 
 export async function sendConversationProcessingEvent(

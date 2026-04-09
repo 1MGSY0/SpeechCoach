@@ -47,6 +47,79 @@ export const generateToken = action({
   },
 });
 
+export const ensureCallReady = action({
+  args: {
+    userId: v.id("User"),
+    conversationId: v.id("Conversations"),
+  },
+  handler: async (ctx, args) => {
+    const conversation = await ctx.runQuery(api.Conversations.GetConversationDetails, {
+      userId: args.userId,
+      conversationId: args.conversationId,
+    });
+
+    if (!conversation) {
+      throw new Error("Conversation not found");
+    }
+
+    const persona = await ctx.runQuery(api.Persona.GetPersonaDetails, {
+      userId: args.userId,
+      personaId: conversation.personaId,
+    });
+
+    if (!persona) {
+      throw new Error("Persona not found");
+    }
+
+    await getStreamVideo().upsertUsers([
+      {
+        id: String(args.userId),
+        name: conversation.userName ?? "User",
+        role: "admin",
+        image: generateAvatarUri({
+          seed: conversation.userName ?? "User",
+          variant: "initials",
+        }),
+      },
+      {
+        id: String(conversation.personaId),
+        name: persona.name ?? "Persona",
+        role: "user",
+        image: generateAvatarUri({
+          seed: persona.name ?? "Persona",
+          variant: "botttsNeutral",
+        }),
+      },
+    ]);
+
+    const call = getStreamVideo().video.call("default", String(args.conversationId));
+
+    try {
+      await call.create({
+        data: {
+          created_by_id: String(args.userId),
+          custom: {
+            conversationId: String(args.conversationId),
+            conversationName: conversation.name ?? "",
+          },
+        },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const isAlreadyExists =
+        message.toLowerCase().includes("already exists") ||
+        message.toLowerCase().includes("call already exists") ||
+        message.toLowerCase().includes("exists");
+
+      if (!isAlreadyExists) {
+        throw error;
+      }
+    }
+
+    return { ok: true };
+  },
+});
+
 export const setupStreamForConversation = internalAction({
   args: {
     userId: v.id("User"),
@@ -74,15 +147,27 @@ export const setupStreamForConversation = internalAction({
       "default",
       String(args.conversationId)
     );
-    await call.create({
-      data: {
-        created_by_id: String(args.userId),
-        custom: {
-          conversationId: String(args.conversationId),
-          conversationName: args.name,
+    try {
+      await call.create({
+        data: {
+          created_by_id: String(args.userId),
+          custom: {
+            conversationId: String(args.conversationId),
+            conversationName: args.name,
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const isAlreadyExists =
+        message.toLowerCase().includes("already exists") ||
+        message.toLowerCase().includes("call already exists") ||
+        message.toLowerCase().includes("exists");
+
+      if (!isAlreadyExists) {
+        throw error;
+      }
+    }
 
     await getStreamVideo().upsertUsers([
       {

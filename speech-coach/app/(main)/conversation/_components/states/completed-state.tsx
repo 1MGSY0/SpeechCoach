@@ -45,56 +45,65 @@ export const CompletedState = ({ data, gradingData }: Props) => {
     <div className="rounded-lg border bg-white">
       <div className="px-4 py-5">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList variant="line" className="mb-4">
-            <TabsTrigger value="summary" className="text-sm font-bold text-primary">
-              Summary
-            </TabsTrigger>
-            <TabsTrigger value="grading" className="text-sm font-bold text-primary">
-              Grading
-            </TabsTrigger>
-            <TabsTrigger value="transcript" className="text-sm font-bold text-primary">
-              Transcript
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="summary" className="mt-0">
-            {displaySummary ? (
-              <SummaryView
-                summary={displaySummary}
-                onTimestampClick={(seconds) => {
-                  setTranscriptSeekSeconds(seconds);
-                  setActiveTab("transcript");
-                }}
-              />
-            ) : (
-              <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                No summary available.
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="grading" className="mt-0">
-            <GradingBreakdownView
-              data={gradingData ?? null}
-              onTimestampClick={(seconds) => {
-                setTranscriptSeekSeconds(seconds);
-                setActiveTab("transcript");
-              }}
-            />
-          </TabsContent>
-
-          <TabsContent value="transcript" className="mt-0">
-            <div className="flex flex-col gap-y-2">
-              <TranscriptView
-                transcript={data.transcriptText}
-                gradingResults={gradingData?.results ?? []}
-                transcriptSeekSeconds={transcriptSeekSeconds}
-                onUserLineClick={(turn, index) => {
-                  console.log("User line clicked:", index, turn);
-                }}
-              />
+          <div className="space-y-4">
+            <div className="sticky top-24 z-10 self-start rounded-lg border bg-white/95 px-3 py-3 shadow-sm backdrop-blur">
+              <TabsList
+                variant="line"
+                className="mb-0 flex w-full flex-wrap justify-start"
+              >
+                <TabsTrigger value="summary" className="text-sm font-bold text-primary">
+                  Summary
+                </TabsTrigger>
+                <TabsTrigger value="grading" className="text-sm font-bold text-primary">
+                  Grading
+                </TabsTrigger>
+                <TabsTrigger value="transcript" className="text-sm font-bold text-primary">
+                  Transcript
+                </TabsTrigger>
+              </TabsList>
             </div>
-          </TabsContent>
+
+            <div className="min-w-0">
+              <TabsContent value="summary" className="mt-0">
+                {displaySummary ? (
+                  <SummaryView
+                    summary={displaySummary}
+                    onTimestampClick={(seconds) => {
+                      setTranscriptSeekSeconds(seconds);
+                      setActiveTab("transcript");
+                    }}
+                  />
+                ) : (
+                  <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                    No summary available.
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="grading" className="mt-0">
+                <GradingBreakdownView
+                  data={gradingData ?? null}
+                  onTimestampClick={(seconds) => {
+                    setTranscriptSeekSeconds(seconds);
+                    setActiveTab("transcript");
+                  }}
+                />
+              </TabsContent>
+
+              <TabsContent value="transcript" className="mt-0">
+                <div className="flex flex-col gap-y-2">
+                  <TranscriptView
+                    transcript={data.transcriptText}
+                    gradingResults={gradingData?.results ?? []}
+                    transcriptSeekSeconds={transcriptSeekSeconds}
+                    onUserLineClick={(turn, index) => {
+                      console.log("User line clicked:", index, turn);
+                    }}
+                  />
+                </div>
+              </TabsContent>
+            </div>
+          </div>
         </Tabs>
       </div>
     </div>

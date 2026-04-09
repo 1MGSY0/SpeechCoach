@@ -34,6 +34,7 @@ export default defineSchema({
         processingProgress: v.optional(v.number()),
         processingStepTitle: v.optional(v.string()),
         processingError: v.optional(v.union(v.string(), v.null())),
+        processingToken: v.optional(v.string()),
         startedAt: v.optional(v.string()),
         endedAt: v.optional(v.string()),
         transcriptText: v.optional(v.string()),

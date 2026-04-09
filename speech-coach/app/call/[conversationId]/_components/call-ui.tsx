@@ -9,10 +9,41 @@ import {
   startVoiceAgentSession,
 } from "@/services/voice-agent";
 
+function mergeLiveTranscriptText(previousText: string, incomingText: string) {
+  const next = incomingText.trim();
+  const prev = previousText.trim();
+
+  if (!prev) return next;
+  if (!next) return prev;
+  if (next.startsWith(prev)) return next;
+  if (prev.startsWith(next)) return prev;
+
+  const normalizedPrev = prev.toLowerCase();
+  const normalizedNext = next.toLowerCase();
+  const maxOverlap = Math.min(normalizedPrev.length, normalizedNext.length);
+
+  for (let overlap = maxOverlap; overlap > 0; overlap -= 1) {
+    if (
+      normalizedPrev.slice(normalizedPrev.length - overlap) ===
+      normalizedNext.slice(0, overlap)
+    ) {
+      return `${prev}${next.slice(overlap)}`;
+    }
+  }
+
+  const shouldInsertSpace =
+    !/[\\s([{/"'-]$/.test(prev) && !/^[\\s,.;:!?)}\]'"-]/.test(next);
+
+  return `${prev}${shouldInsertSpace ? " " : ""}${next}`;
+}
+
 interface Props {
   conversationName: string;
   conversationId: string;
   userId: string;
+  onEnsureCallReady: () => Promise<unknown>;
+  onJoinError: (message: string) => void;
+  userGoal?: string | null;
   transcriptText?: string | null;
   personaName?: string | null;
 };
@@ -21,11 +52,15 @@ export const CallUI = ({
   conversationName,
   conversationId,
   userId,
+  onEnsureCallReady,
+  onJoinError,
+  userGoal,
   transcriptText,
   personaName,
 }: Props) => {
   const call = useCall();
   const [show, setShow] = useState<"lobby" | "call" | "ended">("lobby");
+  const [isJoining, setIsJoining] = useState(false);
   const [livePartialTranscript, setLivePartialTranscript] = useState<{
     speaker: string;
     text: string;
@@ -65,11 +100,21 @@ export const CallUI = ({
       const text = typeof custom.text === "string" ? custom.text.trim() : "";
       if (!text) return;
 
-      setLivePartialTranscript({
-        speaker,
-        text,
-        timestamp: typeof custom.timestamp === "string" ? custom.timestamp : "live",
-        isLive: custom.isFinal !== true,
+      const timestamp = typeof custom.timestamp === "string" ? custom.timestamp : "live";
+
+      setLivePartialTranscript((previous) => {
+        const shouldMerge =
+          previous &&
+          previous.speaker === speaker &&
+          previous.timestamp === timestamp &&
+          previous.isLive;
+
+        return {
+          speaker,
+          text: shouldMerge ? mergeLiveTranscriptText(previous.text, text) : text,
+          timestamp,
+          isLive: custom.isFinal !== true,
+        };
       });
     };
 
@@ -94,6 +139,8 @@ export const CallUI = ({
     if (!call) return;
 
     try {
+      setIsJoining(true);
+      await onEnsureCallReady();
       await call.join();
       setShow("call");
       try {
@@ -106,6 +153,11 @@ export const CallUI = ({
       }
     } catch (error) {
       console.error("Failed to join call:", error);
+      const message =
+        error instanceof Error ? error.message : "Unable to connect to the call.";
+      onJoinError(message);
+    } finally {
+      setIsJoining(false);
     }
   };
 
@@ -123,17 +175,18 @@ export const CallUI = ({
 
   return (
     <StreamTheme className="h-full">
-      {show === "lobby" && <CallLobby onJoin={handleJoin} />}
+      {show === "lobby" && <CallLobby onJoin={handleJoin} isJoining={isJoining} />}
       {show === "call" && (
         <CallActive
           onLeave={handleLeave}
           conversationName={conversationName}
+          userGoal={userGoal}
           transcriptText={transcriptText}
           personaName={personaName}
           livePartialTranscript={livePartialTranscript}
         />
       )}
-      {show === "ended" && <CallEnded />}
+      {show === "ended" && <CallEnded conversationId={conversationId} />}
     </StreamTheme>
   )
 };

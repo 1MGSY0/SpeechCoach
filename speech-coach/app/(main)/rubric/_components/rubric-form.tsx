@@ -29,7 +29,7 @@ const criterionSchema = z.object({
   description: z.string().optional(),
   order: z.number(),
   weight: z.coerce.number().optional(),
-  enabled: z.boolean().default(true),
+  enabled: z.boolean(),
   targetMin: z.coerce.number().optional(),
   targetMax: z.coerce.number().optional(),
   gradingPromptHint: z.string().optional(),
@@ -43,24 +43,28 @@ const categorySchema = z.object({
   order: z.number(),
   weight: z.coerce.number().optional(),
   scoringMode: z.enum(["count", "score", "both"]).optional(),
-  enabled: z.boolean().default(true),
-  criteria: z.array(criterionSchema).default([]),
+  enabled: z.boolean(),
+  criteria: z.array(criterionSchema),
 });
 
 const rubricSchema = z.object({
   name: z.string().min(1, "Rubric name is required."),
   description: z.string().optional(),
-  isDefault: z.boolean().default(false),
-  categories: z.array(categorySchema).default([]),
+  isDefault: z.boolean(),
+  categories: z.array(categorySchema),
 });
 
-export type RubricFormValues = z.infer<typeof rubricSchema>;
+export type RubricFormValues = z.input<typeof rubricSchema>;
+export type RubricFormSubmitValues = z.output<typeof rubricSchema>;
 
 interface RubricFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
   initialValues?: any;
 }
+
+const fieldLabelClassName =
+  "text-sm font-semibold uppercase tracking-[0.14em] text-primary/70";
 
 export const RubricForm = ({
   onSuccess,
@@ -98,7 +102,7 @@ export const RubricForm = ({
 
   const isEdit = Boolean(initialValues?._id);
 
-  const form = useForm<RubricFormValues>({
+  const form = useForm<RubricFormValues, any, RubricFormSubmitValues>({
     resolver: zodResolver(rubricSchema),
     defaultValues: {
       name: initialValues?.name || "",
@@ -139,7 +143,7 @@ export const RubricForm = ({
     name: "categories",
   });
 
-  const onSubmit: SubmitHandler<RubricFormValues> = async (values) => {
+  const onSubmit: SubmitHandler<RubricFormSubmitValues> = async (values) => {
     try {
       const timestamp = new Date().toISOString();
 
@@ -275,63 +279,93 @@ export const RubricForm = ({
   };
 
   return (
-    <div className="max-h-[80vh] overflow-y-auto pr-2">
-      <form className="space-y-4 p-4" onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="space-y-1">
-          <label className="text-xs font-medium">Rubric Name</label>
-          <Input className={undefined} type={undefined} placeholder="e.g. Motivational Interviewing Rubric" {...form.register("name")} />
-          {form.formState.errors.name && (
-            <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>
-          )}
+    <div className="max-h-[85vh] overflow-y-auto pr-2">
+      <form className="space-y-6 p-4 md:p-6" onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+          <div className="space-y-4 rounded-2xl border border-white/70 bg-white/80 p-5 shadow-sm">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold text-foreground">Rubric details</h2>
+              <p className="text-sm text-muted-foreground">
+                Set the rubric name and description before organizing categories and criteria.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className={fieldLabelClassName}>Rubric Name</label>
+              <Input className={undefined} type={undefined} placeholder="e.g. Motivational Interviewing Rubric" {...form.register("name")} />
+              {form.formState.errors.name && (
+                <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <label className={fieldLabelClassName}>Description</label>
+              <Textarea
+                className="min-h-28"
+                placeholder="Describe what this rubric evaluates."
+                {...form.register("description")}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-white/70 bg-white/80 p-5 shadow-sm">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold text-foreground">Settings</h2>
+              <p className="text-sm text-muted-foreground">
+                Choose whether this rubric should be used as the default for new conversations.
+              </p>
+            </div>
+            <div className="mt-4 flex items-center gap-3 rounded-xl border border-white/70 bg-white/70 p-4">
+              <Checkbox
+                checked={form.watch("isDefault")}
+                onCheckedChange={(checked) => form.setValue("isDefault", Boolean(checked))} className={undefined}          />
+              <div className="space-y-1">
+                <p className={fieldLabelClassName}>Default Rubric</p>
+                <span className="text-sm text-muted-foreground">Use this rubric as the default option.</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-medium">Description</label>
-          <Textarea
-            className={undefined}
-            placeholder="Describe what this rubric evaluates."
-            {...form.register("description")}
-          />
+        <div className="space-y-4 rounded-2xl border border-white/70 bg-white/80 p-5 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold text-foreground">Categories</h2>
+              <p className="text-sm text-muted-foreground">
+                Build the scoring structure by grouping criteria into categories.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                appendCategory({
+                  id: undefined,
+                  name: "",
+                  description: "",
+                  order: categoryFields.length,
+                  weight: undefined,
+                  scoringMode: "both",
+                  enabled: true,
+                  criteria: [],
+                })
+              }
+            >
+              Add Category
+            </Button>
+          </div>
+
+          <div className="space-y-4">
+            {categoryFields.map((categoryField, categoryIndex) => (
+              <RubricCategoryCard
+                key={categoryField.id}
+                form={form}
+                categoryIndex={categoryIndex}
+                onRemove={() => removeCategory(categoryIndex)}
+              />
+            ))}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Checkbox
-            checked={form.watch("isDefault")}
-            onCheckedChange={(checked) => form.setValue("isDefault", Boolean(checked))} className={undefined}          />
-          <span className="text-sm">Set as default rubric</span>
-        </div>
-
-        <div className="space-y-4">
-          {categoryFields.map((categoryField, categoryIndex) => (
-            <RubricCategoryCard
-              key={categoryField.id}
-              form={form}
-              categoryIndex={categoryIndex}
-              onRemove={() => removeCategory(categoryIndex)}
-            />
-          ))}
-
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              appendCategory({
-                id: undefined,
-                name: "",
-                description: "",
-                order: categoryFields.length,
-                weight: undefined,
-                scoringMode: "both",
-                enabled: true,
-                criteria: [],
-              })
-            }
-          >
-            Add Category
-          </Button>
-        </div>
-
-        <div className="flex justify-between gap-x-2">
+        <div className="flex justify-between gap-x-2 pt-2">
           {onCancel && (
             <Button
               variant="ghost"

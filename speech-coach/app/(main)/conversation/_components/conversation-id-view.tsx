@@ -4,6 +4,7 @@ import { useContext, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useMutation, usePreloadedQuery, type Preloaded } from "convex/react";
+import { BrainIcon } from "lucide-react";
 
 import { api } from "@/convex/_generated/api";
 import { UserContext } from "@/app/_context/UserContext";
@@ -42,6 +43,7 @@ export const ConversationIdView = ({ preloadedConversation, preloadedGrading }: 
   );
 
   const removeConversation = useMutation(api.Conversations.RemoveConversation);
+  const updateConversation = useMutation(api.Conversations.UpdateConversation);
 
   const handleRemove = () => {
     setIsDeleteOpen(true);
@@ -72,6 +74,27 @@ export const ConversationIdView = ({ preloadedConversation, preloadedGrading }: 
       toast.error(error instanceof Error ? error.message : "Something went wrong.");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleToggleMemory = async () => {
+    try {
+      await updateConversation({
+        userId: conversation.userId,
+        conversationId: conversation._id,
+        semanticMemoryEnabled: !semanticMemoryEnabled,
+      });
+      toast.success(
+        !semanticMemoryEnabled
+          ? "Rolling semantic memory enabled."
+          : "Rolling semantic memory disabled for this conversation."
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to update semantic memory setting."
+      );
     }
   };
 
@@ -136,13 +159,14 @@ export const ConversationIdView = ({ preloadedConversation, preloadedGrading }: 
       }
     : null;
   const primaryActionLabel = isProcessing
-    ? "Re-evaluating"
+    ? "Re-evaluate"
     : isCompleted
       ? "Re-evaluate"
       : "Edit";
   const primaryActionIcon = isCompleted || isProcessing ? "re-evaluate" : "edit";
-  const primaryActionDisabled = isProcessing || isReEvaluating;
-  const handlePrimaryAction = isCompleted ? handleReEvaluate : () => setUpdateDialogOpen(true);
+  const primaryActionDisabled = isReEvaluating;
+  const handlePrimaryAction =
+    isCompleted || isProcessing ? handleReEvaluate : () => setUpdateDialogOpen(true);
   const semanticMemoryEnabled =
     (conversation as { semanticMemoryEnabled?: boolean | null })
       .semanticMemoryEnabled !== false;
@@ -151,7 +175,7 @@ export const ConversationIdView = ({ preloadedConversation, preloadedGrading }: 
     : sanitizedGrading?.summary || conversation.summary;
 
   return (
-    <div className="flex-1 py-4 px-4 md:px-8 flex flex-col gap-y-4">
+    <div className="flex-1 py-4 flex flex-col gap-y-4">
       <UpdateConversationDialog
         open={updateDialogOpen}
         onOpenChange={setUpdateDialogOpen}
@@ -169,76 +193,142 @@ export const ConversationIdView = ({ preloadedConversation, preloadedGrading }: 
         onConfirm={confirmRemove}
         isDeleting={isDeleting}
       />
-      <ConversationIdViewHeader
-        conversationId={conversation._id}
-        conversationName={conversation.name}
-        onPrimaryAction={handlePrimaryAction}
-        primaryActionLabel={primaryActionLabel}
-        primaryActionIcon={primaryActionIcon}
-        primaryActionDisabled={primaryActionDisabled}
-        onEditName={
-          isCompleted || isProcessing ? () => setNameDialogOpen(true) : undefined
-        }
-        onDownloadPdf={
-          isCompleted
-            ? () =>
-                exportConversationReportAsPdf({
-                  conversationName: conversation.name,
-                  summary: reportSummary,
-                  transcript: conversation.transcriptText,
-                  gradingData: sanitizedGrading,
-                })
-            : undefined
-        }
-        canDownloadPdf={isCompleted}
-        onRemove={handleRemove}
-      />
+      <div className="relative left-1/2 right-1/2 -mt-[5.5rem] -mx-[50vw] w-screen bg-gradient-to-br from-primary/[0.04] via-slate-100 to-sky-100/20 sm:bg-gradient-to-r sm:from-primary/9 sm:via-slate-100 sm:to-sky-100/45">
+        <div className="pointer-events-none absolute -right-20 top-0 h-56 w-56 rounded-full bg-sky-200/20 blur-3xl sm:-right-12 sm:h-72 sm:w-72 sm:bg-sky-200/30" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent via-slate-100/92 to-slate-100 sm:via-slate-100/85" />
+        <div className="relative mx-auto w-full max-w-[min(80vw,1600px)] px-4 pb-8 pt-20 sm:px-6 lg:px-8">
+          <ConversationIdViewHeader
+            conversationId={conversation._id}
+            conversationName={conversation.name}
+            onPrimaryAction={handlePrimaryAction}
+            primaryActionLabel={primaryActionLabel}
+            primaryActionIcon={primaryActionIcon}
+            primaryActionDisabled={primaryActionDisabled}
+            onEditName={
+              isCompleted || isProcessing ? () => setNameDialogOpen(true) : undefined
+            }
+            onDownloadPdf={
+              isCompleted
+                ? () =>
+                    exportConversationReportAsPdf({
+                      conversationName: conversation.name,
+                      summary: reportSummary,
+                      transcript: conversation.transcriptText,
+                      gradingData: sanitizedGrading,
+                    })
+                : undefined
+            }
+            canDownloadPdf={isCompleted}
+            onRemove={handleRemove}
+          />
+          <div className="mt-2 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] xl:items-start">
+            <div className="rounded-3xl border border-white/60 bg-white/85 shadow-sm shadow-primary/5 backdrop-blur xl:sticky xl:top-24 xl:self-start xl:h-fit">
+              <div className="px-4 py-5 flex flex-col gap-y-4">
+                <div className="flex items-center gap-x-3">
+                  <div
+                    className="cursor-pointer inline-flex rounded-full transition hover:opacity-80"
+                    onClick={() => router.push(`/persona/${conversation.personaId}`)}
+                  >
+                    <GeneratedAvatar
+                      variant="botttsNeutral"
+                      seed={conversation.personaName}
+                      className="size-10"
+                    />
+                  </div>
+                  <div className="flex min-w-0 flex-col">
+                    <h2 className="text-2xl font-medium">{conversation.name}</h2>
+                    {conversation.personaName && (
+                      <span className="text-sm text-muted-foreground">
+                        {conversation.personaName}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <Badge variant="outline" className="w-fit border-white/70 bg-white/80 capitalize">
+                  {conversation.status}
+                </Badge>
+                <div className="rounded-xl bg-white/70 p-3">
+                  <h2 className="text-base font-semibold uppercase tracking-[0.14em] text-primary/70">
+                    Scenario
+                  </h2>
+                  <div className="text-sm">
+                    {extractPersonaData(conversation.instructions)?.scenario || conversation.instructions}
+                  </div>
+                </div>
 
-      <div className="bg-white rounded-lg border">
-        <div className="px-4 py-5 flex flex-col gap-y-4">
-          <div className="flex items-center gap-x-3">
-            <div
-              className="cursor-pointer inline-flex rounded-full hover:opacity-80 transition"
-              onClick={() => router.push(`/persona/${conversation.personaId}`)}
-            >
-              <GeneratedAvatar
-                variant="botttsNeutral"
-                seed={conversation.personaName}
-                className="size-10"
-              />
+                <div className="rounded-xl bg-white/70 p-3">
+                  <h2 className="text-base font-semibold uppercase tracking-[0.14em] text-primary/70">
+                    User Goal
+                  </h2>
+                  <div className="text-sm">
+                    {extractPersonaData(conversation.instructions)?.conversation_goal || conversation.conversation_goal}
+                  </div>
+                </div>
+                <div className="rounded-xl bg-white/70 p-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    Rubric
+                  </h3>
+                  <p className="mt-2 text-sm font-medium">
+                    {sanitizedGrading?.framework?.name || "No rubric attached"}
+                  </p>
+                </div>
+                {isUpcoming ? (
+                  <div className="rounded-xl bg-white/70 p-3">
+                    <div className="flex items-start gap-3">
+                      <BrainIcon className="mt-0.5 size-4 text-muted-foreground" />
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium">Rolling semantic memory</p>
+                            <p className="text-xs text-muted-foreground">
+                              {semanticMemoryEnabled
+                                ? "Enabled: snapshots update memory and inject it into the agent prompt."
+                                : "Disabled: the agent starts without rolling memory and skips memory update events."}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={semanticMemoryEnabled}
+                            onClick={handleToggleMemory}
+                            className={`rounded-full relative inline-flex h-6 w-11 shrink-0 items-center transition ${
+                              semanticMemoryEnabled ? "bg-primary/70" : "bg-slate-300"
+                            }`}
+                          >
+                            <span
+                              className={`inline-block size-5 rounded-full bg-white shadow-sm transition ${
+                                semanticMemoryEnabled ? "translate-x-5" : "translate-x-1"
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
-            <div className="flex flex-col">
-              <h2 className="text-2xl font-medium">{conversation.name}</h2>
-              {conversation.personaName && (
-                <span className="text-sm text-muted-foreground">
-                  {conversation.personaName}
-                </span>
+
+            <div className="min-w-0">
+              {isCancelled && <CancelledState />}
+              {isProcessing && <ProcessingState conversationId={conversation._id} />}
+              {isCompleted && <CompletedState data={conversation} gradingData={sanitizedGrading}/>}
+              {isActive && <ActiveState conversationId={conversation._id} />}
+              {isUpcoming && (
+                <UpcomingState
+                  conversationId={conversation._id}
+                  userId={conversation.userId}
+                  rubricId={conversation.rubricId}
+                  semanticMemoryEnabled={
+                    (conversation as { semanticMemoryEnabled?: boolean | null })
+                      .semanticMemoryEnabled
+                  }
+                />
               )}
             </div>
-            <div className="p-5 ml-auto">
-                <Badge variant="outline" className="w-fit capitalize">
-                    {conversation.status}
-                </Badge>
-            </div>
           </div>
-          <div>{extractPersonaData(conversation.instructions)?.scenario || conversation.instructions}</div>
         </div>
       </div>
-
-      {isCancelled && <CancelledState />}
-      {isProcessing && <ProcessingState conversationId={conversation._id} />}
-      {isCompleted && <CompletedState data={conversation} gradingData={sanitizedGrading}/>}
-      {isActive && <ActiveState conversationId={conversation._id} />}
-      {isUpcoming && (
-        <UpcomingState
-          conversationId={conversation._id}
-          userId={conversation.userId}
-          semanticMemoryEnabled={
-            (conversation as { semanticMemoryEnabled?: boolean | null })
-              .semanticMemoryEnabled
-          }
-        />
-      )}
     </div>
   );
 };

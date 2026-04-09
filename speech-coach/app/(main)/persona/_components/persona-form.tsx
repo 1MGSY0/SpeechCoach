@@ -44,6 +44,9 @@ interface PersonaFormProps {
   initialValues?: PersonaFormInitialValues;
 }
 
+const fieldLabelClassName =
+  "text-sm font-semibold uppercase tracking-[0.14em] text-primary/70";
+
 type PersonaStructuredData = PersonaFormValues;
 
 function safeTrim(value?: string) {
@@ -116,7 +119,7 @@ ${data.mesExamples}`
 - Avoid summarising your intent; instead, directly say what the character would say.
 - Keep replies conversational and context-aware.
 - When emotion is high, let word choice, pacing, and tone reflect it naturally.
-- Escalate, de-escalate towards the achieving core user objective when the scenario updates in scenario continuitys.
+- Escalate, de-escalate towards the achieving core user objective when the scenario updates in scenario continuity.
 `.trim();
 
   return `${metadataBlock}\n\n${roleplayContext}`;
@@ -226,7 +229,7 @@ export const PersonaForm = ({
 
   return (
     <div className="max-h-[80vh] overflow-y-auto pr-2">
-    <form className="space-y-4 p-4" onSubmit={form.handleSubmit(onSubmit)}>
+    <form className="space-y-5 p-4" onSubmit={form.handleSubmit(onSubmit)}>
       <GeneratedAvatar
         seed={form.watch("char_name")}
         variant="botttsNeutral"
@@ -234,7 +237,7 @@ export const PersonaForm = ({
       />
 
       <div className="space-y-1">
-        <label className="text-xs font-medium" htmlFor="persona-char-name">
+        <label className={fieldLabelClassName} htmlFor="persona-char-name">
           Character Name
         </label>
         <Input
@@ -250,7 +253,7 @@ export const PersonaForm = ({
       </div>
 
       <div className="space-y-1">
-        <label className="text-xs font-medium" htmlFor="persona-scenario">
+        <label className={fieldLabelClassName} htmlFor="persona-scenario">
           Scenario
         </label>
         <Textarea
@@ -265,7 +268,7 @@ export const PersonaForm = ({
       </div>
 
       <div className="space-y-1">
-        <label className="text-xs font-medium" htmlFor="persona-goal">
+        <label className={fieldLabelClassName} htmlFor="persona-goal">
           Conversation User Goal
         </label>
         <Textarea
@@ -280,7 +283,7 @@ export const PersonaForm = ({
       </div>
 
       <div className="space-y-1">
-        <label className="text-xs font-medium" htmlFor="persona-wi-after">
+        <label className={fieldLabelClassName} htmlFor="persona-wi-after">
           World Info
         </label>
         <Textarea
@@ -290,7 +293,7 @@ export const PersonaForm = ({
       </div>
 
       <div className="space-y-1">
-        <label className="text-xs font-medium" htmlFor="persona-wi-before">
+        <label className={fieldLabelClassName} htmlFor="persona-wi-before">
           Lore / Backstory
         </label>
         <Textarea
@@ -301,7 +304,7 @@ export const PersonaForm = ({
       </div>
 
       <div className="space-y-1">
-        <label className="text-xs font-medium" htmlFor="persona-description">
+        <label className={fieldLabelClassName} htmlFor="persona-description">
           Character Description
         </label>
         <Textarea
@@ -316,7 +319,7 @@ export const PersonaForm = ({
       </div>
 
       <div className="space-y-1">
-        <label className="text-xs font-medium" htmlFor="persona-personality">
+        <label className={fieldLabelClassName} htmlFor="persona-personality">
           Personality
         </label>
         <Textarea
@@ -331,7 +334,7 @@ export const PersonaForm = ({
       </div>
 
       <div className="space-y-1">
-        <label className="text-xs font-medium" htmlFor="persona-examples">
+        <label className={fieldLabelClassName} htmlFor="persona-examples">
           Example Message
         </label>
         <Textarea

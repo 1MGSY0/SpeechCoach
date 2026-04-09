@@ -13,6 +13,9 @@ import type { ConversationGetOne } from "../types";
 import { UserContext } from "@/app/_context/UserContext";
 import { api } from "@/convex/_generated/api";
 
+const fieldLabelClassName =
+  "text-sm font-semibold uppercase tracking-[0.14em] text-primary/70";
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -101,7 +104,7 @@ function ConversationNameForm({
   return (
     <form className="space-y-4 p-4" onSubmit={handleSubmit}>
       <div className="space-y-1">
-        <label className="text-xs font-medium" htmlFor="conversation-name-only">
+        <label className={fieldLabelClassName} htmlFor="conversation-name-only">
           Name
         </label>
         <Input

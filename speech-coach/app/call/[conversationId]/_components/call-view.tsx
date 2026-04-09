@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from '@/convex/_generated/api';
+import { extractPersonaData } from "@/components/extract-persona";
 import {usePreloadedQuery, useQuery, type Preloaded } from "convex/react";
 import { CallProvider } from './call-provider';
 import { CallEnded } from './call-ended';
@@ -23,6 +24,8 @@ export const CallView = ({
       : "skip"
   );
   const conversation = liveConversation ?? initialConversation;
+  const userGoal =
+    extractPersonaData(conversation?.instructions)?.conversation_goal ?? null;
 
   if (!conversation) {
     return (
@@ -38,13 +41,14 @@ export const CallView = ({
   }
 
   if (conversation.status === "completed") {
-    return <CallEnded />;
+    return <CallEnded conversationId={conversation._id} />;
   }
 
   return (
     <CallProvider
       conversationId={conversation._id}
       conversationName={conversation.name}
+      userGoal={userGoal}
       transcriptText={conversation.transcriptText}
       personaName={conversation.personaName}
     />

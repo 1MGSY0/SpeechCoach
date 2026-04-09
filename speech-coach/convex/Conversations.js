@@ -29,6 +29,7 @@ export const CreateConversation = mutation({
         processingProgress: v.optional(v.number()),
         processingStepTitle: v.optional(v.string()),
         processingError: v.optional(v.union(v.string(), v.null())),
+        processingToken: v.optional(v.string()),
         startedAt: v.optional(v.string()),
         endedAt: v.optional(v.string()),
         transcriptText: v.optional(v.string()),
@@ -48,6 +49,7 @@ export const CreateConversation = mutation({
             processingProgress: args.processingProgress,
             processingStepTitle: args.processingStepTitle,
             processingError: args.processingError,
+            processingToken: args.processingToken,
             startedAt: args.startedAt,
             endedAt: args.endedAt,
             transcriptText: args.transcriptText,
@@ -90,6 +92,7 @@ export const UpdateConversation = mutation({
         processingProgress: v.optional(v.number()),
         processingStepTitle: v.optional(v.string()),
         processingError: v.optional(v.union(v.string(), v.null())),
+        processingToken: v.optional(v.string()),
         startedAt: v.optional(v.string()),
         endedAt: v.optional(v.string()),
         transcriptText: v.optional(v.string()),
@@ -141,6 +144,9 @@ export const UpdateConversation = mutation({
         }
         if (args.processingError !== undefined) {
             update.processingError = args.processingError;
+        }
+        if (args.processingToken !== undefined) {
+            update.processingToken = args.processingToken;
         }
         if (args.startedAt !== undefined) {
             update.startedAt = args.startedAt;
@@ -203,14 +209,28 @@ const withDuration = (conversation) => {
 };
 
 const withPersonaName = async (ctx, conversation) => {
-    const user = conversation?.userId ? await ctx.db.get(conversation.userId) : null;
+    if (!conversation) {
+        return null;
+    }
 
-    const persona = await ctx.db.get(conversation.personaId);
+    const user = conversation?.userId ? await ctx.db.get(conversation.userId) : null;
+    const persona = conversation?.personaId ? await ctx.db.get(conversation.personaId) : null;
+    const rubric = conversation?.rubricId ? await ctx.db.get(conversation.rubricId) : null;
+    const latestAssessment = conversation
+        ? (
+              await ctx.db
+                  .query("ConversationAssessment")
+                  .withIndex("by_conversationId", (q) => q.eq("conversationId", conversation._id))
+                  .collect()
+          ).sort((a, b) => (b._creationTime ?? 0) - (a._creationTime ?? 0))[0] ?? null
+        : null;
     return {
         ...conversation,
         personaName: persona?.name ?? null, 
         instructions: persona?.instructions ?? null, 
         userName: user?.name ?? null,
+        rubricName: rubric?.name ?? null,
+        latestOverallScore: latestAssessment?.overallScore ?? null,
     };
 };
 
@@ -287,7 +307,7 @@ export const ListConversations = query({
             return true;
         });
 
-        filtered.sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
+        filtered.sort((a, b) => (b._creationTime ?? 0) - (a._creationTime ?? 0));
 
         const total = filtered.length;
         const totalPages = Math.max(1, Math.ceil(total / pageSize));

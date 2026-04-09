@@ -91,9 +91,6 @@ export const CallTranscript = ({ transcript, personaName, livePartial }: Props) 
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <div>
               <p className="text-sm font-semibold">Live transcript</p>
-              <p className="text-xs text-white/60">
-                Chat-style history that keeps the full call context in view
-              </p>
             </div>
             <button
               type="button"
@@ -108,7 +105,7 @@ export const CallTranscript = ({ transcript, personaName, livePartial }: Props) 
           <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
             {turns.length === 0 ? (
               <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-white/15 p-6 text-center text-sm leading-6 text-white/55">
-                Transcript messages will appear here as the conversation progresses.
+                Start speaking to get the conversation going.
               </div>
             ) : null}
 

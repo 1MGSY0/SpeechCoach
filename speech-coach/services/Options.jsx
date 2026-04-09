@@ -1,14 +1,14 @@
 export const ServiceLists=[
     {
-        name:'Conversation',
-        icon:'/Icon_3D_chat.png'
-    },
-    {
-        name:'Persona',
+        name:'Persona Setting',
         icon:'/Icon_3D_agent.png'
     },
     {
-        name:'Rubric',
+        name:'Rubric Setting',
         icon:'/Icon_3D_insight.png'
+    },
+    {
+        name:'Start Conversation',
+        icon:'/Icon_3D_chat.png'
     },
 ]

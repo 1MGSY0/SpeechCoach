@@ -18,6 +18,7 @@ import { UserContext } from "@/app/_context/UserContext";
 
 interface Props {
   onJoin: () => void;
+  isJoining?: boolean;
 };
 
 const DisabledVideoPreview = () => {
@@ -49,7 +50,7 @@ const AllowBrowserPermissions = () => {
   );
 };
 
-export const CallLobby = ({ onJoin }: Props) => {
+export const CallLobby = ({ onJoin, isJoining = false }: Props) => {
   const { useCameraState, useMicrophoneState } = useCallStateHooks();
 
   const { hasBrowserPermission: hasMicPermission } = useMicrophoneState();
@@ -92,11 +93,11 @@ export const CallLobby = ({ onJoin }: Props) => {
 
           <div className="flex w-full justify-between gap-3">
             <Link href="/conversation">
-              <Button variant="ghost">Cancel</Button>
+              <Button variant="ghost" disabled={isJoining}>Cancel</Button>
             </Link>
-            <Button onClick={onJoin}>
+            <Button onClick={onJoin} disabled={isJoining}>
               <LogInIcon />
-              Join Call
+              {isJoining ? "Joining..." : "Join Call"}
             </Button>
           </div>
         </div>

@@ -11,6 +11,7 @@ import {
   StreamVideo,
   StreamVideoClient,
 } from "@stream-io/video-react-sdk";
+import { toast } from "sonner";
 
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import { CallUI } from "./call-ui";
@@ -22,6 +23,7 @@ interface Props {
   userId: Id<"User">;
   userName: string;
   userImage: string;
+  userGoal?: string | null;
   transcriptText?: string | null;
   personaName?: string | null;
 };
@@ -32,15 +34,27 @@ export const CallConnect = ({
   userId,
   userName,
   userImage,
+  userGoal,
   transcriptText,
   personaName,
 }: Props) => {
   const generateToken = useAction(api.conversations_stream.generateToken);
+  const ensureCallReady = useAction(api.conversations_stream.ensureCallReady);
+  const [clientError, setClientError] = useState<string | null>(null);
 
   const [client, setClient] = useState<StreamVideoClient>();
   useEffect(() => {
+    const apiKey = process.env.NEXT_PUBLIC_STREAM_VIDEO_API_KEY;
+
+    if (!apiKey) {
+      setClientError("Stream Video is not configured. Set NEXT_PUBLIC_STREAM_VIDEO_API_KEY.");
+      return;
+    }
+
+    setClientError(null);
+
     const _client = new StreamVideoClient({
-      apiKey: process.env.NEXT_PUBLIC_STREAM_VIDEO_API_KEY!,
+      apiKey,
       user: {
         id: userId,
         name: userName,
@@ -79,6 +93,17 @@ export const CallConnect = ({
       };
   }, [client, conversationId]);
 
+  if (clientError) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-radial from-sidebar-accent to-sidebar px-4">
+        <div className="rounded-xl bg-background p-6 text-center shadow-sm">
+          <h2 className="text-lg font-medium">Call setup failed</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{clientError}</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!client || !call) {
     return (
       <div className="flex h-screen items-center justify-center bg-radial from-sidebar-accent to-sidebar">
@@ -94,6 +119,17 @@ export const CallConnect = ({
           conversationName={conversationName}
           conversationId={conversationId}
           userId={userId}
+          onEnsureCallReady={() =>
+            ensureCallReady({
+              userId,
+              conversationId: conversationId as Id<"Conversations">,
+            })
+          }
+          onJoinError={(message) => {
+            setClientError(message);
+            toast.error(message);
+          }}
+          userGoal={userGoal}
           transcriptText={transcriptText}
           personaName={personaName}
         />

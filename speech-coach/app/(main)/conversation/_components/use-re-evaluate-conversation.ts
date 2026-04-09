@@ -28,7 +28,7 @@ export function useReEvaluateConversation(conversationId: string) {
         throw new Error(payload?.error ?? "Failed to re-evaluate.");
       }
 
-      toast.success("Re-evaluation started.");
+      toast.success("Re-evaluation started. Any previous processing run is being cancelled.");
       startTransition(() => {
         router.refresh();
       });

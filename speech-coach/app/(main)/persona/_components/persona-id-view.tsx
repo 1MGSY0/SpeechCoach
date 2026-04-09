@@ -71,7 +71,7 @@ export const PersonaIdView = ({ preloadedPersona }: Props) => {
 
 
     return (
-        <div className="flex-1 pb-4 px-4 md:px-8 flex flex-col gap-y-4">
+        <div className="flex-1 pb-4 flex flex-col gap-y-4">
             <UpdatePersonaDialog
                 open={updatePersonaDialogOpen}
                 onOpenChange={setUpdatePersonaDialogOpen}
@@ -84,55 +84,62 @@ export const PersonaIdView = ({ preloadedPersona }: Props) => {
                 isDeleting={isDeleting}
                 conversationCount={personaDetail.conversationCount}
             />
-            <PersonaIdViewHeader
-                personaId={personaDetail._id}
-                personaName={personaDetail.name}
-                onEdit={() => setUpdatePersonaDialogOpen(true)}
-                onRemove={handleRemove}
-            />
-            <div className="bg-white rounded-lg border">
-                <div className="px-4 py-5 gap-y-5 flex flex-col col-span-5">
-                    <div className="flex items-center gap-x-3">
-                        <GeneratedAvatar
-                            variant="botttsNeutral"
-                            seed={personaDetail.name}
-                            className="size-10"
-                        />
-                        <h2 className="text-2xl font-medium">{personaDetail.name}</h2>
-                    </div>
-                        <Badge
-                            variant="outline"
-                            className="inline-flex w-fit items-center gap-x-2 [&>svg]:size-4 rounded-md"
-                            >
-                            <VideoIcon className="text-blue-700" />
-                            {personaDetail.conversationCount} {personaDetail.conversationCount === 1 ? "conversation" : "conversations"}
-                        </Badge>
-                        <div className="flex flex-col gap-y-5">
-
-                            {!data ? (
-                                <p className="text-neutral-800 whitespace-pre-wrap">
-                                {personaDetail.instructions}
-                                </p>
-                            ) : (
-                                <div className="space-y-4 text-sm">
-
-                                <Section title="Scenario" content={data.scenario} />
-
-                                <Section title="User Goal" content={data.conversation_goal} />
-
-                                <Section title="Description" content={data.description} />
-
-                                <Section title="Personality" content={data.personality} />
-
-                                <Section title="World Info" content={data.wiAfter} />
-
-                                <Section title="Background / Lore" content={data.wiBefore} />
-
-                                <Section title="Example Message" content={data.mesExamples} />
-
+            <div className="relative left-1/2 right-1/2 -mt-[4.5rem] -mx-[50vw] w-screen overflow-hidden bg-gradient-to-br from-primary/[0.04] via-slate-100 to-sky-100/20 sm:bg-gradient-to-r sm:from-primary/9 sm:via-slate-100 sm:to-sky-100/45">
+                <div className="pointer-events-none absolute -right-20 top-0 h-56 w-56 rounded-full bg-sky-200/20 blur-3xl sm:-right-12 sm:h-72 sm:w-72 sm:bg-sky-200/30" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent via-slate-100/92 to-slate-100 sm:via-slate-100/85" />
+                <div className="relative mx-auto w-full max-w-[min(80vw,1600px)] px-4 pb-8 pt-20 sm:px-6 lg:px-8">
+                    <PersonaIdViewHeader
+                        personaId={personaDetail._id}
+                        personaName={personaDetail.name}
+                        onEdit={() => setUpdatePersonaDialogOpen(true)}
+                        onRemove={handleRemove}
+                    />
+                    <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] xl:items-start">
+                        <div className="rounded-3xl border border-white/60 bg-white/85 shadow-sm shadow-primary/5 backdrop-blur xl:sticky xl:top-4">
+                            <div className="px-4 py-5 flex flex-col gap-y-5">
+                                <div className="flex items-center gap-x-3">
+                                    <GeneratedAvatar
+                                        variant="botttsNeutral"
+                                        seed={personaDetail.name}
+                                        className="size-10"
+                                    />
+                                    <h2 className="text-2xl font-medium">{personaDetail.name}</h2>
                                 </div>
-                            )}
+                                <Badge
+                                    variant="outline"
+                                    className="inline-flex w-fit cursor-pointer items-center gap-x-2 rounded-md border-white/70 bg-white/80 [&>svg]:size-4 hover:bg-muted/60"
+                                    onClick={() => router.push(`/conversation?personaId=${personaDetail._id}`)}
+                                >
+                                    <VideoIcon className="text-blue-700" />
+                                    {personaDetail.conversationCount} {personaDetail.conversationCount === 1 ? "conversation" : "conversations"}
+                                </Badge>
+                                {data ? (
+                                    <div className="space-y-4 text-sm">
+                                        <Section title="Scenario" content={data.scenario} />
+                                        <Section title="User Goal" content={data.conversation_goal} />
+                                    </div>
+                                ) : null}
+                            </div>
                         </div>
+
+                        <div className="rounded-3xl border border-white/60 bg-white/88 shadow-sm shadow-primary/5 backdrop-blur">
+                            <div className="px-4 py-5 flex flex-col gap-y-5">
+                                {!data ? (
+                                    <p className="text-neutral-800 whitespace-pre-wrap">
+                                        {personaDetail.instructions}
+                                    </p>
+                                ) : (
+                                    <div className="space-y-4 text-sm">
+                                        <Section title="Description" content={data.description} />
+                                        <Section title="Personality" content={data.personality} />
+                                        <Section title="World Info" content={data.wiAfter} />
+                                        <Section title="Background / Lore" content={data.wiBefore} />
+                                        <Section title="Example Message" content={data.mesExamples} />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -20,9 +20,9 @@ export default function Home() {
             <h2 className="text-lg font-semibold text-primary">Speech Coach</h2>
         </div>
         <div 
-        className='p-3 rounded-3xl flex flex-col justify-center items-center cursor-pointer hover:bg-secondary/80 hover:translate-y-[-3px] transition'
+        className='p-3 rounded-3xl outline flex flex-col justify-center items-center cursor-pointer hover:bg-secondary/80 hover:translate-y-[-3px] transition'
         onClick={() => handleClick()}>
-            <h1 className="text-6xl font-bold text-center">Go to F*P!</h1>
+            <h1 className="text-3xl font-bold text-center">Login / Sign up</h1>
         </div>
         
       </main>

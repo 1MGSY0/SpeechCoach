@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import type { Id } from "@/convex/_generated/dataModel";
 import { api } from "@/convex/_generated/api";
 import { serverFetchMutation, serverFetchQuery } from "@/lib/convex-server";
@@ -15,7 +15,8 @@ function isConversationProgressValidationError(error: unknown) {
   return (
     error instanceof Error &&
     (error.message.includes("extra field `processingProgress`") ||
-      error.message.includes("extra field `processingError`"))
+      error.message.includes("extra field `processingError`") ||
+      error.message.includes("extra field `processingToken`"))
   );
 }
 
@@ -27,6 +28,7 @@ async function updateConversationStatusCompat(args: {
   processingProgress?: number;
   processingStepTitle?: string;
   processingError?: string | null;
+  processingToken?: string;
   speechMetrics?: unknown;
 }) {
   try {
@@ -41,9 +43,14 @@ async function updateConversationStatusCompat(args: {
       conversationId: args.conversationId,
       transcriptText: args.transcriptText,
       status: args.status,
+      processingToken: args.processingToken,
       speechMetrics: args.speechMetrics,
     });
   }
+}
+
+function createProcessingToken() {
+  return crypto.randomUUID();
 }
 
 async function isSemanticMemoryEnabled(
@@ -93,79 +100,95 @@ export async function POST(req: NextRequest) {
   const userId = payload.userId as Id<"User">;
   const conversationId = payload.conversationId as Id<"Conversations">;
 
-  switch (payload.type) {
-    case "call.transcript_snapshot": {
-      await serverFetchMutation(api.Conversations.UpdateConversation, {
-        userId,
-        conversationId,
-        transcriptText: payload.transcriptText ?? undefined,
-        status: "active",
-      });
+  after(async () => {
+    try {
+      switch (payload.type) {
+        case "call.transcript_snapshot": {
+          await serverFetchMutation(api.Conversations.UpdateConversation, {
+            userId,
+            conversationId,
+            transcriptText: payload.transcriptText ?? undefined,
+            status: "active",
+          });
 
-      if (await isSemanticMemoryEnabled(userId, conversationId)) {
-        try {
-          await sendConversationMemoryUpdateEvent({
-            conversationId,
+          if (await isSemanticMemoryEnabled(userId, conversationId)) {
+            try {
+              await sendConversationMemoryUpdateEvent({
+                conversationId,
+                userId,
+                trigger: "snapshot",
+                turnCount: payload.turnCount,
+              });
+            } catch (err) {
+              console.warn("Skipping memory update event dispatch", {
+                conversationId,
+                userId,
+                error: err,
+              });
+            }
+          }
+          break;
+        }
+        case "call.transcription_ready": {
+          const processingToken = createProcessingToken();
+
+          await updateConversationStatusCompat({
             userId,
-            trigger: "snapshot",
-            turnCount: payload.turnCount,
-          });
-        } catch (err) {
-          console.warn("Skipping memory update event dispatch", {
             conversationId,
-            userId,
-            error: err,
+            transcriptText: payload.transcriptText ?? undefined,
+            status: "processing",
+            processingProgress: 0,
+            processingStepTitle: "Transcript received",
+            processingError: null,
+            processingToken,
+            speechMetrics: payload.speechMetrics,
           });
+
+          if (await isSemanticMemoryEnabled(userId, conversationId)) {
+            try {
+              await sendConversationMemoryUpdateEvent({
+                conversationId,
+                userId,
+                trigger: "final",
+                turnCount: payload.turnCount,
+              });
+            } catch (err) {
+              console.warn("Skipping final memory update event dispatch", {
+                conversationId,
+                userId,
+                error: err,
+              });
+            }
+          }
+
+          try {
+            await sendConversationProcessingEvent({
+              conversationId,
+              userId,
+              modelPipeline: payload.modelPipeline,
+              speechMetrics: payload.speechMetrics,
+              turnCount: payload.turnCount,
+              processingToken,
+            });
+          } catch (err) {
+            console.warn("Inngest not connected, skipping event", {
+              conversationId,
+              userId,
+              error: err,
+            });
+          }
+          break;
         }
       }
-      break;
-    }
-    case "call.transcription_ready": {
-      await updateConversationStatusCompat({
-        userId,
+    } catch (error) {
+      console.error("voice-agent events background processing failed", {
+        payloadType: payload.type,
         conversationId,
-        transcriptText: payload.transcriptText ?? undefined,
-        status: "processing",
-        processingProgress: 0,
-        processingStepTitle: "Transcript received",
-        processingError: null,
-        speechMetrics: payload.speechMetrics,
+        userId,
+        error,
       });
-
-      if (await isSemanticMemoryEnabled(userId, conversationId)) {
-        try {
-          await sendConversationMemoryUpdateEvent({
-            conversationId,
-            userId,
-            trigger: "final",
-            turnCount: payload.turnCount,
-          });
-        } catch (err) {
-          console.warn("Skipping final memory update event dispatch", {
-            conversationId,
-            userId,
-            error: err,
-          });
-        }
-      }
-
-      try {
-        await sendConversationProcessingEvent({
-          conversationId,
-          userId,
-          modelPipeline: payload.modelPipeline,
-          speechMetrics: payload.speechMetrics,
-          turnCount: payload.turnCount,
-        });
-      } catch (err) {
-        console.warn("⚠️ Inngest not connected — skipping event", {
-          conversationId,
-          userId,
-          error: err,
-        });
-      }
-      break;
     }
-  }
-  return NextResponse.json({ status: "ok" });
+  });
+
+  return NextResponse.json({ status: "accepted" });
 }

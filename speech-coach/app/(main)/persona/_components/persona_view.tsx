@@ -23,7 +23,8 @@ export default function PersonaView ({ preloadedPersonas }) {
           onRowClick={(row) => router.push(`/persona/${row._id}`)}
           data={personas} 
           columns={columns}
-          variant="cards"/>
+          variant="cards"
+          cardsContainerClassName="grid grid-cols-1 gap-4 xl:grid-cols-2"/>
         <DataPagination 
           page={filters.page}
           totalPages={totalPages}

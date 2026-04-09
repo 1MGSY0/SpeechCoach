@@ -7,10 +7,12 @@ import {
 } from "@/lib/semantic-memory";
 import { inngest } from "./client";
 import {
+  assertProcessingTokenCurrent,
   buildEmptyTurnRefCorrectionResult,
   markConversationProcessingFailed,
   parseStringArray,
   parseTranscriptJson,
+  ProcessingSupersededError,
   requestTurnRefCorrections,
   safeParseCoreGradingResult,
   safeParseSemanticMemoryState,
@@ -33,18 +35,22 @@ import {
   SEMANTIC_MEMORY_SYSTEM_PROMPT,
 } from "./prompt";
 
-const client = createInngestLlmClient();
-
-const convexUrl =
-  process.env.CONVEX_URL_INTERNAL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
-
-if (!convexUrl) {
-  throw new Error("Missing CONVEX_URL_INTERNAL or NEXT_PUBLIC_CONVEX_URL");
+function getInngestLlmClient() {
+  return createInngestLlmClient();
 }
 
-const convex = new ConvexHttpClient(convexUrl, {
-  skipConvexDeploymentUrlCheck: true,
-});
+function getConvexClient() {
+  const convexUrl =
+    process.env.CONVEX_URL_INTERNAL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
+
+  if (!convexUrl) {
+    throw new Error("Missing CONVEX_URL_INTERNAL or NEXT_PUBLIC_CONVEX_URL");
+  }
+
+  return new ConvexHttpClient(convexUrl, {
+    skipConvexDeploymentUrlCheck: true,
+  });
+}
 
 function mergeProgressionLogs(
   previous: SemanticMemory["progressionReason"] = [],
@@ -226,6 +232,7 @@ export const conversationMemoryUpdate = inngest.createFunction(
     triggers: [{ event: "conversations/memory.update" }],
   },
   async ({ event, step }) => {
+    const convex = getConvexClient();
     const processingStartedAt = new Date();
     const stageDurationsMs: Record<string, number> = {};
     const timedStep = async <T>(
@@ -308,7 +315,7 @@ export const conversationMemoryUpdate = inngest.createFunction(
     });
 
     const memoryText = await timedStep("generate-semantic-memory", async () => {
-      const response = await client.chat.completions.create({
+      const response = await getInngestLlmClient().chat.completions.create({
         model: INNGEST_LLM_MODEL,
         messages: [
           {
@@ -391,7 +398,25 @@ export const conversationProcessing = inngest.createFunction(
     triggers: [{ event: "conversations/processing" }],
   },
   async ({ event, step }) => {
+    const convex = getConvexClient();
+    const processingToken =
+      typeof event.data.processingToken === "string"
+        ? event.data.processingToken
+        : undefined;
+
+    const ensureCurrent = async (stepId: string) => {
+      await step.run(stepId, async () => {
+        await assertProcessingTokenCurrent({
+          convex,
+          conversationId: event.data.conversationId as any,
+          processingToken,
+        });
+      });
+    };
+
     try {
+      await ensureCurrent("ensure-current-before-fetch");
+
       const conversation = await step.run("fetch-conversation", async () => {
         await updateConversationProgress({
           convex,
@@ -412,6 +437,8 @@ export const conversationProcessing = inngest.createFunction(
       if (!conversation) {
         throw new Error("Conversation not found");
       }
+
+      await ensureCurrent("ensure-current-before-parse");
 
       const transcriptTurns = await step.run("parse-transcript", async () => {
         await updateConversationProgress({
@@ -448,6 +475,8 @@ export const conversationProcessing = inngest.createFunction(
         return { ok: true, transcriptTurns: 0 };
       }
 
+      await ensureCurrent("ensure-current-before-rubric");
+
       const transcriptForSummary = transcriptToPrompt(
         transcriptTurns as TranscriptTurn[]
       );
@@ -480,6 +509,8 @@ export const conversationProcessing = inngest.createFunction(
       if (!rubric) {
         throw new Error("Rubric not found");
       }
+
+      await ensureCurrent("ensure-current-before-grading");
 
       const transcriptForPrompt = await step.run(
         "prepare-transcript",
@@ -519,7 +550,7 @@ export const conversationProcessing = inngest.createFunction(
             stepTitle: "Grading transcript",
           });
 
-          const response = await client.chat.completions.create({
+          const response = await getInngestLlmClient().chat.completions.create({
             model: INNGEST_LLM_MODEL,
             messages: [
               {
@@ -540,6 +571,8 @@ export const conversationProcessing = inngest.createFunction(
           return text;
         }
       );
+
+      await ensureCurrent("ensure-current-before-assessment");
 
       const grading = (await step.run("parse-grading-json", async () => {
         await updateConversationProgress({
@@ -596,6 +629,8 @@ export const conversationProcessing = inngest.createFunction(
         }
       );
 
+      await ensureCurrent("ensure-current-before-saving-results");
+
       await step.run("save-conversation-results", async () => {
         await updateConversationProgress({
           convex,
@@ -621,6 +656,8 @@ export const conversationProcessing = inngest.createFunction(
           );
         }
       });
+
+      await ensureCurrent("ensure-current-before-turnrefs");
 
       const assessmentWithResults = await step.run(
         "fetch-assessment-full-for-turnrefs",
@@ -694,7 +731,7 @@ export const conversationProcessing = inngest.createFunction(
               });
 
               return requestTurnRefCorrections({
-                client,
+                client: getInngestLlmClient(),
                 transcriptForPrompt: turnRefTranscriptPrompt,
                 correctionPrompt,
                 conversationId: event.data.conversationId,
@@ -770,6 +807,8 @@ export const conversationProcessing = inngest.createFunction(
         }
       }
 
+      await ensureCurrent("ensure-current-before-final-output");
+
       await step.run("append-turnrefs-to-raw-output", async () => {
         await updateConversationProgress({
           convex,
@@ -824,6 +863,8 @@ export const conversationProcessing = inngest.createFunction(
         );
       });
 
+      await ensureCurrent("ensure-current-before-complete");
+
       await step.run("complete-conversation-processing", async () => {
         await updateConversationProgress({
           convex,
@@ -859,6 +900,14 @@ export const conversationProcessing = inngest.createFunction(
             : event.data.turnCount ?? null,
       };
     } catch (error) {
+      if (error instanceof ProcessingSupersededError) {
+        return {
+          ok: true,
+          cancelled: true,
+          reason: "superseded-by-newer-re-evaluation",
+        };
+      }
+
       await markConversationProcessingFailed({
         convex,
         userId: event.data.userId as any,

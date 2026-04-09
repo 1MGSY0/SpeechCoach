@@ -11,7 +11,8 @@ function isConversationProgressValidationError(error: unknown) {
   return (
     error instanceof Error &&
     (error.message.includes("extra field `processingProgress`") ||
-      error.message.includes("extra field `processingError`"))
+      error.message.includes("extra field `processingError`") ||
+      error.message.includes("extra field `processingToken`"))
   );
 }
 
@@ -22,6 +23,7 @@ async function updateConversationStatusCompat(args: {
   processingProgress?: number;
   processingStepTitle?: string;
   processingError?: string | null;
+  processingToken?: string;
 }) {
   try {
     return await serverFetchMutation(api.Conversations.UpdateConversation, args);
@@ -34,8 +36,13 @@ async function updateConversationStatusCompat(args: {
       userId: args.userId,
       conversationId: args.conversationId,
       status: args.status,
+      processingToken: args.processingToken,
     });
   }
+}
+
+function createProcessingToken() {
+  return crypto.randomUUID();
 }
 
 export async function POST(req: NextRequest) {
@@ -68,6 +75,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const processingToken = createProcessingToken();
+
     await updateConversationStatusCompat({
       userId: convexUserId,
       conversationId,
@@ -75,11 +84,13 @@ export async function POST(req: NextRequest) {
       processingProgress: 0,
       processingStepTitle: "Queued for re-evaluation",
       processingError: null,
+      processingToken,
     });
 
     await sendConversationProcessingEvent({
       conversationId,
       userId: convexUserId,
+      processingToken,
     });
   } catch (error) {
     console.error("Failed to re-send conversation processing event", {
@@ -96,6 +107,7 @@ export async function POST(req: NextRequest) {
         processingProgress: conversation.processingProgress ?? 100,
         processingStepTitle: conversation.processingStepTitle ?? "Completed",
         processingError: null,
+        processingToken: conversation.processingToken,
       });
     } catch (rollbackError) {
       console.error("Failed to roll back re-evaluation status", {

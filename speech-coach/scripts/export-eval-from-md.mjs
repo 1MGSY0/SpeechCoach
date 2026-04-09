@@ -5,8 +5,11 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api.js";
 
 const TARGET_CONVERSATION_IDS = [
-  "jn723zqr161zdzqee1edpqegw184bcav",
-  "jn7bbrd1n1nz7wbg2b7fda02jh84aahk"
+  "jn7bqxnscfydw64179hwy0e72s84c0v2",
+  "jn7brzb52bqtb4gftn1hsrk3ts84db9m",
+  "jn7cmh0mt3q0sakj7jsex71z9d84d0tz",
+  "jn7endmxrt55mtkajnrny5e0t984egc9",
+  "jn7bsz97cfekw568c48rcsgqs584dwbr"
 ];
 
 function resolveRoots() {
@@ -26,7 +29,7 @@ function resolveRoots() {
 }
 
 const { workspaceRoot, speechCoachRoot } = resolveRoots();
-const OUTPUT_PATH = path.resolve(workspaceRoot, "reports", "fyp-data", "eval.md");
+const OUTPUT_PATH = path.resolve(workspaceRoot, "reports", "fyp-data", "eval_u.md");
 
 
 

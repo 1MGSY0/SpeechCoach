@@ -45,11 +45,19 @@ export type TurnRefCorrectionResult = {
   }>;
 };
 
+export class ProcessingSupersededError extends Error {
+  constructor(message = "Processing was superseded by a newer re-evaluation.") {
+    super(message);
+    this.name = "ProcessingSupersededError";
+  }
+}
+
 function isConversationProgressValidationError(error: unknown) {
   return (
     error instanceof Error &&
     (error.message.includes("extra field `processingProgress`") ||
-      error.message.includes("extra field `processingError`"))
+      error.message.includes("extra field `processingError`") ||
+      error.message.includes("extra field `processingToken`"))
   );
 }
 
@@ -89,6 +97,32 @@ export async function updateConversationProgress({
       conversationId,
       status,
     });
+  }
+}
+
+export async function assertProcessingTokenCurrent({
+  convex,
+  conversationId,
+  processingToken,
+}: {
+  convex: ConvexHttpClient;
+  conversationId: any;
+  processingToken?: string;
+}) {
+  if (!processingToken) {
+    return;
+  }
+
+  const conversation = await convex.query(api.Conversations.GetConversationById, {
+    conversationId,
+  });
+
+  if (!conversation) {
+    throw new Error("Conversation not found");
+  }
+
+  if (conversation.processingToken !== processingToken) {
+    throw new ProcessingSupersededError();
   }
 }
 

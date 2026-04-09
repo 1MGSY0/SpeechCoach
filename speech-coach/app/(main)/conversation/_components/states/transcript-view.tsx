@@ -127,7 +127,10 @@ export const TranscriptView = ({
 
   const handleSliderChange = (value: number) => {
     setSliderValue(value);
-    scrollToTimestamp(value);
+  };
+
+  const commitSliderPosition = () => {
+    scrollToTimestamp(sliderValue);
   };
 
   return (
@@ -148,6 +151,9 @@ export const TranscriptView = ({
             step={1}
             value={sliderValue}
             onChange={(e) => handleSliderChange(Number(e.target.value))}
+            onPointerUp={commitSliderPosition}
+            onTouchEnd={commitSliderPosition}
+            onKeyUp={commitSliderPosition}
             className="w-full cursor-pointer"
           />
 
@@ -155,6 +161,10 @@ export const TranscriptView = ({
             <span>0:00:00</span>
             <span>{secondsToTimestamp(maxSeconds)}</span>
           </div>
+
+          <p className="mt-3 text-sm text-muted-foreground">
+            Hint: Hover over user response with feedback items to see suggested phrasing.
+          </p>
         </div>
 
         <div
@@ -222,6 +232,11 @@ export const TranscriptView = ({
                             key={item._id ?? `${turn.timestamp}-${index}-${feedbackIndex}`}
                             className="space-y-1"
                           >
+                            <p className="text-xs font-semibold text-primary-foreground/80">
+                                Suggested improvement {item.score != null && item.maxScore != null
+                                  ? `- Score: ${item.score}/${item.maxScore}`
+                                  : ""}
+                            </p>
                             {item.criterion?.name ? (
                               <p className="text-xs font-semibold text-primary-foreground/80">
                                 {item.criterion.name}

@@ -23,6 +23,9 @@ interface RubricCategoryCardProps {
   onRemove: () => void;
 }
 
+const fieldLabelClassName =
+  "text-sm font-semibold uppercase tracking-[0.14em] text-primary/70";
+
 export const RubricCategoryCard = ({
   form,
   categoryIndex,
@@ -38,8 +41,8 @@ export const RubricCategoryCard = ({
   });
 
   return (
-    <Card className={undefined}>
-      <CardHeader className="pb-2">
+    <Card className="rounded-2xl border-white/70 bg-white/90 shadow-sm">
+      <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center justify-between">
           <span>Category {categoryIndex + 1}</span>
           <Button
@@ -53,41 +56,55 @@ export const RubricCategoryCard = ({
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        <Input
-                  className={undefined} type={undefined} placeholder="Category name"
-                  {...form.register(`categories.${categoryIndex}.name`)}        />
+      <CardContent className="space-y-5">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2 md:col-span-2">
+            <label className={fieldLabelClassName}>Category Name</label>
+            <Input
+                      className={undefined} type={undefined} placeholder="Category name"
+                      {...form.register(`categories.${categoryIndex}.name`)}        />
+          </div>
 
-        <Textarea
-                  className={undefined} placeholder="Category description"
-                  {...form.register(`categories.${categoryIndex}.description`)}        />
+          <div className="space-y-2 md:col-span-2">
+            <label className={fieldLabelClassName}>Description</label>
+            <Textarea
+                      className={undefined} placeholder="Category description"
+                      {...form.register(`categories.${categoryIndex}.description`)}        />
+          </div>
 
-        <Input
-                  className={undefined} type="number"
-                  step="0.1"
-                  placeholder="Weight"
-                  {...form.register(`categories.${categoryIndex}.weight`)}        />
+          <div className="space-y-2">
+            <label className={fieldLabelClassName}>Weight</label>
+            <Input
+                      className={undefined} type="number"
+                      step="0.1"
+                      placeholder="Weight"
+                      {...form.register(`categories.${categoryIndex}.weight`)}        />
+          </div>
 
-        <select
-          className="w-full border rounded-md px-3 py-2 text-sm"
-          {...form.register(`categories.${categoryIndex}.scoringMode`)}
-        >
-          <option value="">Select scoring mode</option>
-          <option value="count">Count</option>
-          <option value="score">Score</option>
-          <option value="both">Both</option>
-        </select>
+          <div className="space-y-2">
+            <label className={fieldLabelClassName}>Scoring Mode</label>
+            <select
+              className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none"
+              {...form.register(`categories.${categoryIndex}.scoringMode`)}
+            >
+              <option value="">Select scoring mode</option>
+              <option value="count">Count</option>
+              <option value="score">Score</option>
+              <option value="both">Both</option>
+            </select>
+          </div>
+        </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 rounded-xl border border-white/70 bg-white/70 p-3">
           <Checkbox
                       checked={form.watch(`categories.${categoryIndex}.enabled`)}
                       onCheckedChange={(checked) => form.setValue(`categories.${categoryIndex}.enabled`, Boolean(checked))} className={undefined}          />
-          <span className="text-sm">Enabled</span>
+          <span className="text-sm font-medium">Enabled</span>
         </div>
 
-        <div className="space-y-4 border rounded-md p-3">
+        <div className="space-y-4 rounded-xl border border-white/70 bg-muted/10 p-4">
           <div className="flex items-center justify-between">
-            <h4 className="font-medium">Criteria</h4>
+            <h4 className={fieldLabelClassName}>Criteria</h4>
             <Button
               type="button"
               variant="outline"
